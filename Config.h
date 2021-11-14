@@ -15,6 +15,7 @@
 #include "ns3/netanim-module.h"
 #include "PacketStream.h"
 #include <mutex>
+#include "shells/Shell.h"
 
 
 using namespace ns3;

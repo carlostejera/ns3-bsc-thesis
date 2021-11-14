@@ -41,17 +41,16 @@ void EthSwitch::sendConfirmJoin(Ptr<NetDevice> dev, ns3::Mac48Address sender, ui
 void EthSwitch::joinManagersNetwork() {
   uint8_t buf[512];
   PacketStream stream(buf);
-
-  stream << PACKET_JOIN_MANAGER << nodeId;
+  NetShell* nShell = new NetShell(new FunctionShell("addToNetwork", ""), ns3::Mac48Address("FF:FF:FF:FF:FF:FF"));
+  string netShells = nShell->assembleString();
+  std::vector<uint8_t> myVector(netShells.begin(), netShells.end());
+  uint8_t *text = &myVector[0];
 
   // Broadcast that the user wants to join the network
   for (uint32_t i = 0; i < GetNode()->GetNDevices(); ++i) {
+    Ptr<Packet> p = Create<Packet>(text, strlen ((char *) text));
+
     Ptr<NetDevice> dev = GetNode()->GetDevice(i);
-
-    Ptr<Packet> p = Create<Packet>(
-        stream.start(),
-        stream.finish(dev->GetAddress(), ns3::Mac48Address("FF:FF:FF:FF:FF:FF")));
-
     if (!dev->Send(p, ns3::Mac48Address("FF:FF:FF:FF:FF:FF"), 0x800)) {
       std::cout << "Unable to send packet" << std::endl;
     }
@@ -241,9 +240,14 @@ void EthSwitch::recvPkt(
     const Address& from,
     const Address& to,
     NetDevice::PacketType pt ) {
-  uint8_t buf[512];
-  memset(buf, 0 , 512);
-  packet->CopyData(buf, 512);
+
+  uint32_t pktSize = packet->GetSize();
+  uint8_t buf[pktSize];
+  memset(buf, 0 , pktSize);
+  packet->CopyData(buf, pktSize);
+  string netShell = string ((char *)buf);
+  cout << netShell  <<  endl;
+
 
   PacketStream stream(buf);
   stream.readSize();

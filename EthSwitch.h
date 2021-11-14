@@ -5,6 +5,8 @@
 #include "CommunicationLog.h"
 #include "UserLog.h"
 #include <functional>
+#include "shells/NetShell.h"
+#include "shells/FunctionShell.h"
 
 using namespace ns3;
 using namespace std;

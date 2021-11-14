@@ -16,17 +16,15 @@ private:
   string communicationFunction;
 
 public:
-  NetShell(Shell* shell, Mac48Address receiver, string type, string f) : ShellDecorator (shell) {
+  NetShell(Shell* shell, Mac48Address receiver) : ShellDecorator (shell) {
     this->receiver = receiver;
-    this->type = type;
-    this->communicationFunction = f;
   }
 
   string  assembleString() const override {
-    return "net_shell=(" +
-           "receiver=" + this->receiver +
-           " type=" + this->type + " comm_func=" + this->communicationFunction
-        + this->shell_->assembleString();
+    ostringstream s1;
+    s1 << this->receiver;
+    return "net_shell=(receiver=" + s1.str() + " " +
+        this->shell_->assembleString() + ")";
 
   }
 };

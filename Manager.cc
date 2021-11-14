@@ -150,9 +150,18 @@ void Manager::recvPkt(
         const Address& to,
         NetDevice::PacketType pt ) {
 
-    uint8_t buf[512];
-    memset(buf, 0, 512);
-    packet->CopyData(buf, 512);
+    uint32_t pktSize = packet->GetSize();
+    uint8_t buf[pktSize];
+    memset(buf, 0 , pktSize);
+    packet->CopyData(buf, pktSize);
+    cout << buf  <<  endl;
+    cout << "please" << endl;
+    string netShell = string ((char *)buf);
+    Shell::shell (netShell);
+
+//    uint8_t buf[512];
+//    memset(buf, 0, 512);
+//    packet->CopyData(buf, 512);
 
     PacketStream stream(buf);
 
@@ -169,6 +178,8 @@ void Manager::recvPkt(
     stream >> switchId;
     cout << "---" << endl;
     cout << "Manager receives a packet from" << sender << endl;
+    cout << packet << endl;
+    cout << "???" << endl;
     switch (flag) {
         case (PACKET_JOIN_MANAGER):
             if (this->registerSwitch(dev, sender, switchId)) {
