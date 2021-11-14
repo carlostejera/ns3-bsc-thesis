@@ -1,7 +1,7 @@
-#include "scratch/network/Config.h"
-#include "scratch/network/User.h"
-#include "scratch/network/EthSwitch.h"
-#include "scratch/network/Manager.h"
+#include "Config.h"
+#include "User.h"
+#include "EthSwitch.h"
+#include "Manager.h"
 
 
 using namespace ns3;

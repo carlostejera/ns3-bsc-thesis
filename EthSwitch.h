@@ -1,7 +1,7 @@
 #ifndef ETHSWITCH_H
 #define ETHSWITCH_H
 
-#include "scratch/network/Config.h"
+#include "Config.h"
 #include "CommunicationLog.h"
 #include "UserLog.h"
 #include <functional>

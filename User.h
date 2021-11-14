@@ -1,7 +1,7 @@
 #ifndef USER_H
 #define USER_H
 
-#include "scratch/network/Config.h"
+#include "Config.h"
 using namespace ns3;
 using namespace std;
 

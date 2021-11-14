@@ -13,7 +13,7 @@
 #include "ns3/point-to-point-module.h"
 #include "ns3/applications-module.h"
 #include "ns3/netanim-module.h"
-#include "scratch/network/PacketStream.h"
+#include "PacketStream.h"
 #include <mutex>
 
 

@@ -1,4 +1,4 @@
-#include "scratch/network/User.h"
+#include "User.h"
 using namespace ns3;
 using namespace std;
 

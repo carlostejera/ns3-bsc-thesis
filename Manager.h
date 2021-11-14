@@ -1,7 +1,7 @@
 #ifndef MANAGER_H
 #define MANAGER_H
 
-#include "scratch/network/Config.h"
+#include "Config.h"
 using namespace ns3;
 using namespace std;
 
