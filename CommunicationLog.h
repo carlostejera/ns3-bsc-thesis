@@ -2,7 +2,7 @@
 #define COMMUNICATION_LOG_ENTRY_H
 
 #include "Config.h"
-#include "CommunicationLogEntry.h"
+#include "shells/LogShell.h"
 
 using namespace ns3;
 using namespace std;
@@ -16,7 +16,7 @@ using namespace std;
 class CommunicationLog {
     private:
     uint8_t owner;
-    vector<CommunicationLogEntry> log;
+    vector<LogShell> log;
     uint8_t currentSeqNum = 0;
     
 
@@ -31,7 +31,7 @@ class CommunicationLog {
     void initialiseLog(ns3::Mac48Address authorMac, int8_t id);
     void addToLog(uint8_t seqNum, string prevHash, uint8_t flag, string event, Mac48Address mac, int8_t nodeId);
     void readLog();
-    CommunicationLogEntry getLastEntry();
+    LogShell getLastEntry();
     bool isSuccessorEntry();
 
 
