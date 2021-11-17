@@ -16,7 +16,7 @@ private:
   string communicationFunction;
 
 public:
-  NetShell(Shell* shell, Mac48Address receiver) : ShellDecorator (shell) {
+  NetShell(Mac48Address receiver, Shell* shell) : ShellDecorator (shell) {
     this->receiver = receiver;
   }
 

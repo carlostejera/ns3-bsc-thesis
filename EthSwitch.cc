@@ -41,7 +41,7 @@ void EthSwitch::sendConfirmJoin(Ptr<NetDevice> dev, ns3::Mac48Address sender, ui
 void EthSwitch::joinManagersNetwork() {
   uint8_t buf[512];
   PacketStream stream(buf);
-  NetShell* nShell = new NetShell(new FunctionShell("addToNetwork", ""), ns3::Mac48Address("FF:FF:FF:FF:FF:FF"));
+  NetShell* nShell = new NetShell(ns3::Mac48Address("FF:FF:FF:FF:FF:FF"), new FunctionShell("addToNetwork", ""));
   string netShells = nShell->assembleString();
   std::vector<uint8_t> myVector(netShells.begin(), netShells.end());
   uint8_t *text = &myVector[0];

@@ -18,6 +18,11 @@ public:
   string assembleString() const override{
     return this->shell_->assembleString();
   }
+
+
+  Shell* getInnerShell(){
+    return this->shell_;
+  }
 };
 
 #endif //NS_3_30_SHELLDECORATOR_H

@@ -2,6 +2,8 @@
 #define MANAGER_H
 
 #include "Config.h"
+#include "shells/Shelling.h"
+
 using namespace ns3;
 using namespace std;
 

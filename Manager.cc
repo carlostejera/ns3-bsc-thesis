@@ -157,8 +157,10 @@ void Manager::recvPkt(
     cout << buf  <<  endl;
     cout << "please" << endl;
     string netShell = string ((char *)buf);
-    Shell::shell (netShell);
-
+    NetShell* x = Shelling::shell (netShell);
+    cout << x->assembleString() << endl;
+    cout << x->getInnerShell()->assembleString() << endl;
+    cout << "lets goooooooooooooo" << endl;
 //    uint8_t buf[512];
 //    memset(buf, 0, 512);
 //    packet->CopyData(buf, 512);
