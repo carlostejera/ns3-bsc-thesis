@@ -1,18 +1,11 @@
 #include "User.h"
 using namespace ns3;
 using namespace std;
-
-PacketStream User::createBuf(Ptr<const Packet> packet) {
-  uint8_t buf[512];
-  memset(buf, 0 , 512);
-  packet->CopyData(buf, 512);
-  PacketStream stream(buf);
-  return stream;
-}
-
 void User::recvPkt(Ptr<NetDevice> dev, Ptr<const Packet> packet, uint16_t proto, const Address& from, const Address& to, NetDevice::PacketType pt) {
 
-  PacketStream stream = this->createBuf(packet);
+
+}
+/*PacketStream stream = this->createBuf(packet);
 
   stream.readSize();
   auto sender = stream.readMac();
@@ -30,8 +23,19 @@ void User::recvPkt(Ptr<NetDevice> dev, Ptr<const Packet> packet, uint16_t proto,
     default:
       cout << "User " << this->nodeId << " received unknown packet with flag:" << to_string(flag) <<
       " and switchId: " << switchId << endl;
-  }
+  }*//*
+
 }
+
+PacketStream User::createBuf(Ptr<const Packet> packet) {
+  uint8_t buf[512];
+  memset(buf, 0 , 512);
+  packet->CopyData(buf, 512);
+  PacketStream stream(buf);
+  return stream;
+}
+
+
 
 
 void User::joinSwitch() {
@@ -61,4 +65,4 @@ void User::registerSwitch(Ptr<NetDevice> dev, ns3::Mac48Address switchMac, uint8
     auto idk = it->second.first;
     cout << idk << endl;
   }
-}
+}*/

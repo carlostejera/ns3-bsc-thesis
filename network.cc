@@ -7,31 +7,11 @@
 using namespace ns3;
 using namespace std;
 
-
-
-void UserScheduleJoin(Ptr<User> dev) {
-  dev->joinSwitch();
-}
-
 void SwitchScheduleJoin(Ptr<EthSwitch> dev) {
-  dev->joinManagersNetwork();
+  dev->requestJoiningNetwork();
 }
 
-void ManagerScheduleBroadcast(Ptr<Manager> dev) {
-  dev->broadcastNetworkChanges(HERE_ARE_THE_LOG_ENTRIES);
-}
 
-void SwitchSchedulePrint(Ptr<EthSwitch> dev) {
-  dev->printLogEntries();
-}
-
-void SwitchScheduleGossip(Ptr<EthSwitch> dev) {
-  dev->gossip();
-}
-
-void SwitchScheduleDejoin(Ptr<EthSwitch> dev) {
-  dev->dejoin();
-}
 
 int main(int argc, char* argv[]) {
 
@@ -68,14 +48,6 @@ int main(int argc, char* argv[]) {
   p2p.Install(switch_nodes.Get(switchNumbers - 1), switch_nodes.Get(0));
   p2p.Install(switch_nodes.Get(switchNumbers - 1), switch_nodes.Get(1));
 
-
-
-
-  //p2p.Install(user_nodes.Get(0), switch_nodes.Get(0));
-  //p2p.Install(user_nodes.Get(1), switch_nodes.Get(1));
-  //p2p.Install(user_nodes.Get(2), switch_nodes.Get(3));
-
-
   Ptr<User> user_apps[userNumbers];
   Ptr<EthSwitch> switch_apps[switchNumbers];
   Ptr<Manager> manager_apps[managerNumbers];
@@ -91,7 +63,7 @@ int main(int argc, char* argv[]) {
   }
 
   for (uint32_t i = 0; i < managerNumbers; i++) {
-    manager_apps[i] = Create<Manager>(i);
+    manager_apps[i] = Create<Manager>(9 + i);
     manager_nodes.Get(i)->AddApplication(manager_apps[i]);
   }
 
@@ -127,12 +99,12 @@ int main(int argc, char* argv[]) {
   for (uint8_t i = 0; i < switchNumbers; i++) {
     Simulator::Schedule(Seconds(time), &SwitchScheduleJoin, switch_apps[i]);
     ++time;
-    Simulator::Schedule(Seconds(time), &ManagerScheduleBroadcast, manager_apps[0]);
-    ++time;
+//    Simulator::Schedule(Seconds(time), &ManagerScheduleBroadcast, manager_apps[0]);
+//    ++time;
 
   }
 
-  for (uint8_t i = 0; i < switchNumbers; i++) {
+  /*for (uint8_t i = 0; i < switchNumbers; i++) {
     Simulator::Schedule(Seconds(time), &SwitchScheduleGossip, switch_apps[i]);
     ++time;
   }
@@ -142,7 +114,7 @@ int main(int argc, char* argv[]) {
 
   for (uint8_t i = 0; i < switchNumbers; i++) {
     Simulator::Schedule(Seconds(time), &SwitchSchedulePrint, switch_apps[i]);
-  }
+  }*/
 
   Simulator::Run(); //run simulation
   Simulator::Destroy(); //end simulation

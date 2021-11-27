@@ -1,7 +1,8 @@
 #ifndef USER_H
 #define USER_H
 
-#include "Config.h"
+#include "CommunicationLog.h"
+#include "shells/LogStructures.h"
 using namespace ns3;
 using namespace std;
 
@@ -12,13 +13,9 @@ private:
     int8_t nodeId;
     string communicationLog;
     string otherLog;
-    mutex lock;
 
 public:
     void recvPkt(Ptr<NetDevice>, Ptr<const Packet>, uint16_t proto, const Address& from, const Address& to, NetDevice::PacketType pt);
-    void joinSwitch();
-    void registerSwitch(Ptr<NetDevice> dev, ns3::Mac48Address switchMac, uint8_t switchId);
-    PacketStream createBuf(Ptr<const Packet> packet);
 
     User(int32_t id) : Application() { this->nodeId = id; }
     virtual ~User() {}

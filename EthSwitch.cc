@@ -1,9 +1,11 @@
 #include "EthSwitch.h"
-#include "fetch.h"
+#include "shells/LogStructures.h"
+#include "shells/LogFunctions.h"
 
 using namespace ns3;
 using namespace std;
 
+/*
 
 bool EthSwitch::registerUser(Ptr<NetDevice> dev, ns3::Mac48Address userMac, uint8_t deviceId) {
   // lock.lock();
@@ -39,9 +41,10 @@ void EthSwitch::sendConfirmJoin(Ptr<NetDevice> dev, ns3::Mac48Address sender, ui
 
 
 void EthSwitch::joinManagersNetwork() {
-  uint8_t buf[512];
-  PacketStream stream(buf);
-  NetShell* nShell = new NetShell(ns3::Mac48Address("FF:FF:FF:FF:FF:FF"), new FunctionShell("addToNetwork", ""));
+    ContentShell* contentShell = new ContentShell("addToNetwork", "", to_string(this))
+    NetShell* netShell = new NetShell(ns3::Mac48Address("FF:FF:FF:FF:FF:FF"))
+
+  NetShell<LogShell<ContentShell>>* nShell = new NetShell<LogShell<ContentShell>>(ns3::Mac48Address("FF:FF:FF:FF:FF:FF"), "request", this->seq, "prev", this->nodeId, "addToNetwork", "params", "msg");
   string netShells = nShell->assembleString();
   std::vector<uint8_t> myVector(netShells.begin(), netShells.end());
   uint8_t *text = &myVector[0];
@@ -81,6 +84,7 @@ void EthSwitch::addToLog(int8_t seq, ns3::Mac48Address mac) {
 
 //-----------------------------------------------------------------------------------------------
 
+*/
 /*void EthSwitch::printLogEntries() {
   cout << "--------------------------------" << endl;
   cout << "Log entry from Switch " << to_string(this->nodeId) << endl;
@@ -92,7 +96,8 @@ void EthSwitch::addToLog(int8_t seq, ns3::Mac48Address mac) {
   }
   cout << "" << endl;
 
-}*/
+}*//*
+
 
 //-----------------------------------------------------------------------------------------------
 
@@ -232,23 +237,86 @@ void EthSwitch::dejoin() {
 
 //-----------------------------------------------------------------------------------------------
 
+*/
+
+void EthSwitch::requestJoiningNetwork() {
+    ContentShell *cShell = new ContentShell("addToNetwork", "",
+                                            to_string(this->authorId) + "wants to join the network");
+    LogShell *logShell = new LogShell(-1, "", this->authorId, cShell);
+    NetShell *nShell = new NetShell(ns3::Mac48Address("FF:FF:FF:FF:FF:FF"), "request", logShell);
+    Printer stringAssembler;
+    stringAssembler.visit(nShell);
+    string netShells = stringAssembler.str();
+    std::vector <uint8_t> myVector(netShells.begin(), netShells.end());
+    uint8_t *text = &myVector[0];
+
+
+    // Broadcast that the user wants to join the network
+    for (uint32_t i = 0; i < GetNode()->GetNDevices(); ++i) {
+        Ptr <Packet> p = Create<Packet>(text, strlen((char *) text));
+
+        Ptr <NetDevice> dev = GetNode()->GetDevice(i);
+        auto dest = ns3::Mac48Address::ConvertFrom(dev->GetAddress());
+        cout << p << endl;
+        cout << "Sending packets to " << dest << " with Packet size " << p->GetSize() << endl;
+
+        if (!dev->Send(p, ns3::Mac48Address("FF:FF:FF:FF:FF:FF"), 0x800)) {
+            std::cout << "Unable to send packet" << std::endl;
+        }
+    }
+}
+
+void EthSwitch::assignManager(ns3::Mac48Address sender, int8_t managerId) {
+    this->manager = make_pair(managerId, sender);
+}
 
 void EthSwitch::recvPkt(
-    Ptr<NetDevice> dev,
-    Ptr<const Packet> packet,
-    uint16_t proto,
-    const Address& from,
-    const Address& to,
-    NetDevice::PacketType pt ) {
-
-  uint32_t pktSize = packet->GetSize();
-  uint8_t buf[pktSize];
-  memset(buf, 0 , pktSize);
-  packet->CopyData(buf, pktSize);
-  string netShell = string ((char *)buf);
-  cout << netShell  <<  endl;
+        Ptr <NetDevice> dev,
+        Ptr<const Packet> packet,
+        uint16_t proto,
+        const Address &from,
+        const Address &to,
+        NetDevice::PacketType pt) {
+    cout << "------------------" << endl;
+    cout << "i am " << to_string(this->authorId) << endl;
+    cout << packet << endl;
 
 
+    // Reads packet size and prepares the transformation of bytes to string
+    uint32_t pktSize = packet->GetSize() ;
+    cout << "this is the packet size" << to_string(pktSize) << endl;
+    uint8_t buf[pktSize];
+    memset(buf, 0, pktSize);
+    packet->CopyData(buf, pktSize);
+    string netShell (buf, buf + pktSize);
+    cout << netShell << endl;
+    // Transforms the string to a net shell object
+    NetShell* nShell = SomeFunctions::shell(netShell);
+    cout << "I got " << netShell << endl;
+
+    // Checks the type of of shell (communication or log exchange)
+    if (nShell->type == REQUEST) {
+        cout << "Dropping packet. Information for the manager" << endl;
+        cout << netShell << endl;
+    } else if (nShell->type == LOG_ENTRY) {
+        if (nShell->shell->shell->params == to_string(this->authorId)) {
+            cout << "This packet is for me, yey" << endl;
+            if (nShell->shell->shell->function == ASSIGN_MANAGER) {
+                cout << to_string(nShell->shell->authorId) << endl;
+                cout << to_string(nShell->shell->authorId) << endl;
+                cout << to_string(nShell->shell->authorId) << endl;
+                this->assignManager(ns3::Mac48Address::ConvertFrom(dev->GetAddress()),
+                                    nShell->shell->authorId);
+                cout << "Manager " << to_string(this->manager.first) << "is assigned." << endl;
+            }
+        }
+    }
+    cout << "------------------" << endl;
+    delete nShell->shell->shell;
+    delete nShell->shell;
+    delete nShell;
+
+/*
   PacketStream stream(buf);
   stream.readSize();
 
@@ -310,7 +378,7 @@ void EthSwitch::recvPkt(
           for (int8_t i = 0; i < seqN; i++) {
             auto entry = stream.readMac();
             this->log.push_back(make_pair(this->seq, entry));
-            this->cLog.addToLog(this->seq, "", HERE_ARE_THE_LOG_ENTRIES, "Adding MAC to my list. ", entry, deviceId);
+//            this->cLog.addToLog(this->seq, "", HERE_ARE_THE_LOG_ENTRIES, "Adding MAC to my list. ", entry, deviceId);
             ++this->seq;
           }
           break;
@@ -357,6 +425,6 @@ void EthSwitch::recvPkt(
             " and deviceId " << to_string(deviceId) << endl;
 
 
-  }
+  }*/
 
 }

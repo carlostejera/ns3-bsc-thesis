@@ -6,8 +6,6 @@
 #define NS_3_30_SHELLING_H
 
 #include <string>
-#include "FunctionShell.h"
-#include "NetShell.h"
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
 #include "ns3/internet-module.h"
@@ -59,60 +57,8 @@ public:
         return v;
     }
 
-    static Shell* helpFunction(string shellString, string shellType = "net_shell=(") {
+    template<class T>
 
-        MapFunc m;
-
-
-        auto startIndex = shellString.find(shellType) + shellType.length();
-        auto end = shellString.find_last_of(")") - startIndex;
-
-        auto shellContent = shellString.substr(startIndex, end);
-        cout << shellContent << endl;
-
-        Shell* shell;
-        if (shellContent.find(N_SHELL) != string::npos) {
-            shell = helpFunction(shellContent, N_SHELL);
-        } else if (shellContent.find(F_SHELL) != string::npos) {
-            shell = helpFunction(shellContent, F_SHELL);
-            cout << "meeeeeeeh" << endl;
-            cout << shellContent << endl;
-            auto params = shellContent.erase(shellContent.find(F_SHELL));
-            cout << params<< endl;
-            m = shellSplit(shellContent, " ");
-            string tmp = m["receiver"];
-            const char *bruh = tmp.c_str();
-            cout << bruh << endl;
-            shell = new NetShell(ns3::Mac48Address(bruh), shell);
-
-
-        } else if (shellContent.find(L_SHELL) != string::npos) {
-            shell = helpFunction(shellContent, L_SHELL);
-
-        } else if (shellContent.find(C_SHELL) != string::npos) {
-            shell = helpFunction(shellContent, C_SHELL);
-
-        } else {
-            cout << "No shell found" << endl;
-            m = shellSplit(shellContent, " ");
-            for (auto iter = m.begin(); iter != m.end(); iter++) {
-                auto first = iter->first;
-                auto sec = iter->second;
-                cout << first << " " << sec << endl;
-            }
-            shell = new FunctionShell(m["function"], m["params"]);
-        }
-        cout << "----" << shell->assembleString() << endl;
-        return shell;
-    }
-
-    static NetShell* shell(string shellString) {
-        cout << shellString << endl;
-
-        Shell* shell = helpFunction(shellString);
-        MapFunc m;
-        return dynamic_cast<NetShell*>(shell);
-    }
 };
 
 #endif //NS_3_30_SHELLING_H
