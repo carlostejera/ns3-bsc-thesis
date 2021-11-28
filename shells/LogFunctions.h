@@ -24,7 +24,7 @@ void Printer::visit(LogShell *lShell) {
 
 void Printer::visit(NetShell *nShell) {
     oss
-            << "nShell=(receiver=" << nShell->receiver
+            << "nShell=(receiver=" << nShell->macReceiver << "/" << to_string(nShell->receiverId)
             << " type=" << nShell->type << " ";
     nShell->shell->accept(this);
     oss << ")";

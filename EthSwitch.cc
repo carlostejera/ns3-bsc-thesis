@@ -182,13 +182,13 @@ void EthSwitch::giveNeighbourLogs(Ptr<NetDevice> dev, ns3::Mac48Address sender, 
 //-----------------------------------------------------------------------------------------------
 
 void EthSwitch::printLogEntries() {
-  this->cLog.readLog();
+  this->networkLog.readLog();
 }
 
 //-----------------------------------------------------------------------------------------------
 
 
-void EthSwitch::sendLogEntries(Ptr<NetDevice> dev, ns3::Mac48Address sender, int8_t seq) {
+void EthSwitch::sendAllLogEntriesTo(Ptr<NetDevice> dev, ns3::Mac48Address sender, int8_t seq) {
 
   uint8_t buf[512];
   PacketStream stream(buf);
@@ -243,18 +243,12 @@ void EthSwitch::requestJoiningNetwork() {
     ContentShell *cShell = new ContentShell("addToNetwork", "",
                                             to_string(this->authorId) + "wants to join the network");
     LogShell *logShell = new LogShell(-1, "", this->authorId, cShell);
-    NetShell *nShell = new NetShell(ns3::Mac48Address("FF:FF:FF:FF:FF:FF"), "request", logShell);
-    Printer stringAssembler;
-    stringAssembler.visit(nShell);
-    string netShells = stringAssembler.str();
-    std::vector <uint8_t> myVector(netShells.begin(), netShells.end());
-    uint8_t *text = &myVector[0];
+    NetShell *nShell = new NetShell(ns3::Mac48Address("FF:FF:FF:FF:FF:FF"), 127, "request", logShell);
 
+    // Broadcast that the user wants to join the network (simulating via uni-cast)
 
-    // Broadcast that the user wants to join the network
     for (uint32_t i = 0; i < GetNode()->GetNDevices(); ++i) {
-        Ptr <Packet> p = Create<Packet>(text, strlen((char *) text));
-
+        Ptr <Packet> p = this->createPacket(nShell);
         Ptr <NetDevice> dev = GetNode()->GetDevice(i);
         auto dest = ns3::Mac48Address::ConvertFrom(dev->GetAddress());
         cout << p << endl;
@@ -265,10 +259,30 @@ void EthSwitch::requestJoiningNetwork() {
         }
     }
 }
+void EthSwitch::reconstructNetwork() {
+    for (auto &entry : this->networkLog->getLog()) {
+      this->reconstructLog(entry.shell);
+    }
+
+}
+
+void EthSwitch::reconstructLog(ContentShell* cShell) {
+    if (cShell->function == ADD_MEMBER) {
+        this->addMemberToNetwork(cShell->params);
+    }
+}
 
 void EthSwitch::assignManager(ns3::Mac48Address sender, int8_t managerId) {
     this->manager = make_pair(managerId, sender);
 }
+
+void EthSwitch::addMemberToNetwork(string params) {
+    int authorId;
+    stringstream ssAuthorId(params);
+    ssAuthorId >> authorId;
+    this->familyMembers.push_back(authorId);
+}
+
 
 void EthSwitch::recvPkt(
         Ptr <NetDevice> dev,
@@ -277,44 +291,57 @@ void EthSwitch::recvPkt(
         const Address &from,
         const Address &to,
         NetDevice::PacketType pt) {
-    cout << "------------------" << endl;
-    cout << "i am " << to_string(this->authorId) << endl;
-    cout << packet << endl;
+    ostringstream oss;
+    oss << "------------------SwitchPacket-------------------" << endl
+        << "i am " << to_string(this->authorId) << endl
+        << packet << endl;
 
 
     // Reads packet size and prepares the transformation of bytes to string
-    uint32_t pktSize = packet->GetSize() ;
-    cout << "this is the packet size" << to_string(pktSize) << endl;
-    uint8_t buf[pktSize];
-    memset(buf, 0, pktSize);
-    packet->CopyData(buf, pktSize);
-    string netShell (buf, buf + pktSize);
-    cout << netShell << endl;
+    string netShell = this->readPacket(packet);
     // Transforms the string to a net shell object
     NetShell* nShell = SomeFunctions::shell(netShell);
-    cout << "I got " << netShell << endl;
+    oss << "Received: " << netShell << endl;
+    oss << "Result: ";
+
+
 
     // Checks the type of of shell (communication or log exchange)
+
+//    if (!this->isFamilyMember(nShell->shell->authorId)) {
+//        oss << "Dropping packet. Not family member";
+//        cout << oss.str() << endl;
+//        return;
+//
+//    }
+
+    if (this->neighbourMap.find(nShell->shell->authorId) == this->neighbourMap.end()) {
+        cout << "Adding neighbour" << endl;
+        this->neighbourMap.insert(make_pair(nShell->shell->authorId, dev));
+    }
+
     if (nShell->type == REQUEST) {
-        cout << "Dropping packet. Information for the manager" << endl;
-        cout << netShell << endl;
-    } else if (nShell->type == LOG_ENTRY) {
-        if (nShell->shell->shell->params == to_string(this->authorId)) {
-            cout << "This packet is for me, yey" << endl;
+        oss << "Dropping packet. Information for the manager";
+        cout << oss.str() << endl;
+        return;
+    }
+
+    // Checks if the device is the receiver
+    if (nShell->receiverId == this->authorId) {
+        oss << "This packet is for me. ";
+        if (nShell->type == DIARY) {
             if (nShell->shell->shell->function == ASSIGN_MANAGER) {
-                cout << to_string(nShell->shell->authorId) << endl;
-                cout << to_string(nShell->shell->authorId) << endl;
-                cout << to_string(nShell->shell->authorId) << endl;
                 this->assignManager(ns3::Mac48Address::ConvertFrom(dev->GetAddress()),
                                     nShell->shell->authorId);
-                cout << "Manager " << to_string(this->manager.first) << "is assigned." << endl;
+                oss << "Manager with ID " << to_string(this->manager.first) << " is assigned.";
             }
+        } else if (nShell->type == LOG_ENTRY) {
+            this->networkLog->addToLog(*nShell->shell);
+            this->reconstructLog(this->networkLog->getLastEntry().shell);
         }
     }
-    cout << "------------------" << endl;
-    delete nShell->shell->shell;
-    delete nShell->shell;
-    delete nShell;
+    cout << oss.str() << endl;
+    cout << "----------------SwitchPacket_END----------------\n" << endl;
 
 /*
   PacketStream stream(buf);
@@ -378,7 +405,7 @@ void EthSwitch::recvPkt(
           for (int8_t i = 0; i < seqN; i++) {
             auto entry = stream.readMac();
             this->log.push_back(make_pair(this->seq, entry));
-//            this->cLog.addToLog(this->seq, "", HERE_ARE_THE_LOG_ENTRIES, "Adding MAC to my list. ", entry, deviceId);
+//            this->networkLog.addToLog(this->seq, "", HERE_ARE_THE_LOG_ENTRIES, "Adding MAC to my list. ", entry, deviceId);
             ++this->seq;
           }
           break;
@@ -412,12 +439,12 @@ void EthSwitch::recvPkt(
               break;
 
           case (NEIGHBOUR_ASKED_FOR_LOGS):
-            this->sendLogEntries(dev, sender, seqN);
+            this->sendAllLogEntriesTo(dev, sender, seqN);
             break;
           case (REMOVE_SWITCH_FROM_LIST):
             f = fetch("addToLog");
-            f(this->cLog, this->seq, "", HERE_ARE_THE_LOG_ENTRIES, "Removing MAC from my list. ", ns3::Mac48Address("FF:FF:FF:FF:FF:FF"), deviceId);
-            //this->cLog.addToLog(this->seq, "", HERE_ARE_THE_LOG_ENTRIES, "Removing MAC from my list. ", ns3::Mac48Address("FF:FF:FF:FF:FF:FF"), deviceId);
+            f(this->networkLog, this->seq, "", HERE_ARE_THE_LOG_ENTRIES, "Removing MAC from my list. ", ns3::Mac48Address("FF:FF:FF:FF:FF:FF"), deviceId);
+            //this->networkLog.addToLog(this->seq, "", HERE_ARE_THE_LOG_ENTRIES, "Removing MAC from my list. ", ns3::Mac48Address("FF:FF:FF:FF:FF:FF"), deviceId);
             this->seq++;
             break;
           default:

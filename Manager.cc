@@ -8,7 +8,7 @@ using namespace std;
     cout << "Register a new switch" << endl;
     ostringstream prevEvent;
     prevEvent << "event" << this - seq;
-    this->cLog.addToLog(this->seq, prevEvent.str(), this->nodeId, "addToNetwork", to_string(shell->getAuthor()), "Switch was added");
+    this->networkLog.addToLog(this->seq, prevEvent.str(), this->nodeId, "addToNetwork", to_string(shell->getAuthor()), "Switch was added");
     this->seq++;
     this->newConnectedSwitches.insert(make_pair(shell->getAuthor(), dev->GetAddress()));
     cout << "Switch added to list;" << endl;
@@ -114,7 +114,7 @@ void Manager::connectToManager() {
 
 //-----------------------------------------------------------------------------------------------
 
-void Manager::sendLogEntries(Ptr<NetDevice> dev, uint8_t msg, ns3::Mac48Address sender, int8_t seq) {
+void Manager::sendAllLogEntriesTo(Ptr<NetDevice> dev, uint8_t msg, ns3::Mac48Address sender, int8_t seq) {
 
     uint8_t buf[512];
     PacketStream stream(buf);
@@ -151,40 +151,55 @@ void Manager::removeSwitch(uint8_t id) {
 
 void Manager::registerUser(Ptr<NetDevice> dev, int8_t authorId) {
     ostringstream oss;
-    oss << "Add the author " << to_string(authorId) << " to the AuthorMacMap.";
-    this->authorMacMap.insert(make_pair(authorId, dev));
-    this->cLog->addToLog(LogShell(this->currSeq, "prev", this->authorId,
-                                  new ContentShell(ASSIGN_MANAGER,to_string(authorId), oss.str())));
+    oss << "New member arrived. Add " << to_string(authorId) << " to member list";
+    this->neighbourMap.insert(make_pair(authorId, dev));
+    this->familyMembers.push_back(authorId);
+
+    this->networkLog->addToLog(LogShell(this->currSeq, "", this->authorId,
+                                        new ContentShell(ADD_MEMBER, to_string(authorId), oss.str())));
     this->currSeq++;
 }
 
-void Manager::sendNetworkJoinConfirmation() {
-    LogShell lShell = this->cLog->getLastEntry();
-    LogShell* p_lShell = &lShell;
-    NetShell* nShell;
-    Printer stringAssembler;
-    string netShellString;
-
+void Manager::sendNetworkJoinConfirmation(int8_t authorId) {
     // Sends a confirmation to the join requester and also all necessary entries to reconstruct the current network
-    for (auto iter = this->authorMacMap.begin(); iter != this->authorMacMap.end(); iter++) {
-        Ptr<NetDevice> nDev = iter->second;
+    Ptr<NetDevice> nDev = this->neighbourMap[authorId];
+    auto destinationMac = ns3::Mac48Address::ConvertFrom(nDev->GetAddress());
+    ContentShell *cShell = new ContentShell(ASSIGN_MANAGER, to_string(this->authorId), "Request confirmed. Network is joined.");
+    LogShell *logShell =  new LogShell(-1, "prev", this->authorId, cShell);
 
-        auto destinationMac = ns3::Mac48Address::ConvertFrom(nDev->GetAddress());
+    NetShell* nShell = new NetShell(destinationMac, authorId, DIARY, logShell);
 
-        nShell = new NetShell(destinationMac, LOG_ENTRY, p_lShell);
-        stringAssembler.visit(nShell);
-        netShellString = stringAssembler.str();
-        stringAssembler.clearOss();
-        std::vector <uint8_t> myVector(netShellString.begin(), netShellString.end());
-        uint8_t *text = &myVector[0];
-        Ptr <Packet> p = Create<Packet>(text, strlen((char *) text));
-        cout << p << endl;
-        cout << "Sending packets to " << destinationMac << " with Packet size" << p->GetSize() << endl;
-        if (!nDev->Send(p, destinationMac, 0x800)) {
-            std::cout << "Unable to send packet" << std::endl;
-        }
+    Ptr <Packet> p = this->createPacket(nShell);
+    this->sendPacket(nDev, p);
+}
 
+void Manager::sendAllLogEntriesTo(int8_t authorReceiverId) {
+    auto receiverNetDevice = this->neighbourMap[authorReceiverId];
+    auto receiverMac = ns3::Mac48Address::ConvertFrom(receiverNetDevice->GetAddress());
+    NetShell* nShell;
+    Ptr<Packet> p;
+    cout << "Sending " << to_string(this->networkLog->getLogsSize()) << " entries to " << to_string(authorReceiverId) << endl;
+    for (int i = 0; i < this->networkLog->getLogsSize(); i++) {
+        auto log = this->networkLog->getEntryAt(i);
+        nShell = new NetShell(receiverMac, authorReceiverId, LOG_ENTRY, &log);
+        p = this->createPacket(nShell);
+        this->sendPacket(receiverNetDevice, p);
     }
+
+}
+
+void Manager::broadcastLastNetworkChange(int8_t exceptedReceiver =-1) {
+    for (auto iter = this->neighbourMap.begin(); iter != this->neighbourMap.end(); iter++) {
+        auto authorId = iter->first;
+        if (authorId != exceptedReceiver) {
+            this->sendLastEntryTo(authorId);
+        }
+    }
+}
+
+
+void Manager::reconstructLog(ContentShell *cShell) {
+
 }
 
 void Manager::recvPkt(
@@ -194,36 +209,31 @@ void Manager::recvPkt(
         const Address& from,
         const Address& to,
         NetDevice::PacketType pt ) {
-    cout << "manager" << endl;
-    cout << packet << endl;
 
-    uint32_t pktSize = packet->GetSize();
-    uint8_t buf[pktSize];
-    memset(buf, 0 , pktSize);
-    packet->CopyData(buf, pktSize);
-    string netShell (buf, buf + pktSize);
-    cout << "----" << netShell << endl;
+    ostringstream oss;
+    oss << "------------------ManagerPacket-------------------" << endl
+        << "Manager: " << to_string(this->authorId) << endl
+        << packet << endl;
+
+    string netShell = this->readPacket(packet);
+    oss << "Received: " << netShell << endl;
     NetShell* nShell = SomeFunctions::shell(netShell);
+
     if (nShell->type == "request") {
-        cout << "Request from " << to_string(nShell->shell->authorId) << ": " << nShell->shell->shell->function << endl;
+        oss << "Request: "  << nShell->shell->shell->function << " (from "<< to_string(nShell->shell->authorId) << ")" << endl;
+        oss << "Result: ";
         if (nShell->shell->shell->function == "addToNetwork") {
-            // TODO: Change the 48
-            this->registerUser(dev, nShell->shell->authorId);
-            this->sendNetworkJoinConfirmation();
+            auto receiverId = nShell->shell->authorId;
+            this->registerUser(dev, receiverId);
+            this->sendNetworkJoinConfirmation(receiverId);
+            this->sendAllLogEntriesTo(receiverId);
+            this->broadcastLastNetworkChange(receiverId);
+            oss << to_string(receiverId) << " added to the network. Sending confirmation and log entries.";
         }
     }
-    delete nShell;
-    //------------------------ string is read
+    cout << oss.str() << endl;
+    cout << "---------------ManagerPacket_END----------------\n" << endl;
 
-//    auto iShell = shell (netShell);
-//    cout << (iShell->getFunction() == "addToNetwork") << endl;
-//    if (iShell->getFunction() == "addToNetwork") {
-//        this->registerSwitch(dev, iShell);
-//        if (this->registerSwitch(dev, sender, switchId)) {
-//            this->confirmSwitchJoin(dev, sender);
-//            this->sendLogEntries(dev, HERE_ARE_THE_LOG_ENTRIES, sender, 0);
-//        }
-    cout << "lets goooooooooooooo" << endl;
 }
 
 //    PacketStream stream(buf);
@@ -247,7 +257,7 @@ void Manager::recvPkt(
 //        case (PACKET_JOIN_MANAGER):
 //            if (this->registerSwitch(dev, sender, switchId)) {
 //                this->confirmSwitchJoin(dev, sender);
-//                this->sendLogEntries(dev, HERE_ARE_THE_LOG_ENTRIES, sender, 0);
+//                this->sendAllLogEntriesTo(dev, HERE_ARE_THE_LOG_ENTRIES, sender, 0);
 //            }
 //            break;
 //            case (USER_JOIN_REQUEST):
@@ -257,7 +267,7 @@ void Manager::recvPkt(
 //        case (LOG_ENTRIES):
 //            seq = switchId;
 //            cout << "somebody needs entries from seq " << to_string(seq) << endl;
-//            this->sendLogEntries(dev, HERE_ARE_THE_LOG_ENTRIES, sender, seq);
+//            this->sendAllLogEntriesTo(dev, HERE_ARE_THE_LOG_ENTRIES, sender, seq);
 //            break;
 //        case (PACKET_DEJOIN):
 //            if(this->switchExists(switchId)) {

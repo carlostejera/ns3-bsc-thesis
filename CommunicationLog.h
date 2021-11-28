@@ -15,8 +15,6 @@ class CommunicationLog {
     private:
     int8_t owner;
     vector<LogShell> log;
-    int8_t currentSeqNum = 0;
-    
 
     public:
     CommunicationLog(int8_t owner) {
@@ -27,9 +25,12 @@ class CommunicationLog {
     void initialiseLog();
     void addToLog(LogShell shell);
     void readLog();
+    string readFrom(int seq);
     LogShell getLastEntry();
-
-
+    LogShell getEntryAt(int entryNum);
+    int8_t getCurrentSeqNum();
+    int getLogsSize();
+    vector<LogShell> getLog();
 
     
 

@@ -23,7 +23,9 @@ static constexpr const char* L_SHELL = "lShell=(";
 static constexpr const char* C_SHELL = "cShell=(";
 
 static constexpr const char* REQUEST = "request";
+static constexpr const char* DIARY = "diary";
 static constexpr const char* LOG_ENTRY = "logEntry";
+static constexpr const char* ADD_MEMBER = "addMemberToNetwork";
 
 static constexpr const char* ASSIGN_MANAGER = "assignManager";
 
@@ -90,12 +92,14 @@ struct LogShell : public Shell {
 };
 
 struct NetShell : public Shell {
-    ns3::Mac48Address receiver;
+    ns3::Mac48Address macReceiver;
+    int8_t receiverId;
     string type;
     LogShell* shell;
 
-    NetShell(ns3::Mac48Address mac, string type, LogShell* shell){
-        this->receiver = mac;
+    NetShell(ns3::Mac48Address mac, int8_t receiverId, string type, LogShell* shell){
+        this->macReceiver = mac;
+        this->receiverId = receiverId;
         this->type = type;
         this->shell = shell;
     }
@@ -107,8 +111,7 @@ struct NetShell : public Shell {
 
 
 struct SomeFunctions {
-    static pair <string, string> varSplitter(string s) {
-        string del = "=";
+    static pair <string, string> varSplitter(string s, string del = "=") {
         int start = 0;
         int end = s.find(del);
         string first;
@@ -180,9 +183,15 @@ struct SomeFunctions {
         auto netShellParams = nShellContent.erase(nShellContent.find(L_SHELL));
         m = shellSplit(netShellParams, " ");
         string tmp = m["receiver"];
-        const char *bruh = tmp.c_str();
+        auto receiverPair = varSplitter(tmp, "/");
+        const char *bruh = receiverPair.first.c_str();
+
+        stringstream ssId(receiverPair.second);
+        int receiverId;
+        ssId >> receiverId;
         auto resultShell = new NetShell(
                 ns3::Mac48Address(bruh),
+                receiverId,
                 m["type"],
                 lShellNew
         );

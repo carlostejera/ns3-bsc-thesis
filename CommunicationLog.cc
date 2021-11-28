@@ -20,3 +20,26 @@ void CommunicationLog::readLog() {
 LogShell CommunicationLog::getLastEntry() {
     return this->log.back();
 }
+
+string CommunicationLog::readFrom(int seq) {
+//    for (auto &entry: this->log) {
+//        entry.sequenceNum
+//    }
+    return "";
+}
+
+LogShell CommunicationLog::getEntryAt(int entryNum) {
+    return this->log.at(entryNum);
+}
+
+int8_t CommunicationLog::getCurrentSeqNum() {
+    return this->log.back().sequenceNum;
+}
+
+int CommunicationLog::getLogsSize() {
+    return this->log.size();
+}
+
+vector<LogShell> CommunicationLog::getLog() {
+    return this->log;
+}

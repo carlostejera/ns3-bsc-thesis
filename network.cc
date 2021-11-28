@@ -11,6 +11,14 @@ void SwitchScheduleJoin(Ptr<EthSwitch> dev) {
   dev->requestJoiningNetwork();
 }
 
+void SwitchSchedulePrintNetworkLog(Ptr<EthSwitch> dev) {
+    dev->printNetworkLog();
+}
+
+void ManagerSchedulePrintNetworkLog(Ptr<Manager> dev) {
+    dev->printNetworkLog();
+}
+
 
 
 int main(int argc, char* argv[]) {
@@ -63,7 +71,7 @@ int main(int argc, char* argv[]) {
   }
 
   for (uint32_t i = 0; i < managerNumbers; i++) {
-    manager_apps[i] = Create<Manager>(9 + i);
+    manager_apps[i] = Create<Manager>(100 + i);
     manager_nodes.Get(i)->AddApplication(manager_apps[i]);
   }
 
@@ -99,22 +107,27 @@ int main(int argc, char* argv[]) {
   for (uint8_t i = 0; i < switchNumbers; i++) {
     Simulator::Schedule(Seconds(time), &SwitchScheduleJoin, switch_apps[i]);
     ++time;
-//    Simulator::Schedule(Seconds(time), &ManagerScheduleBroadcast, manager_apps[0]);
-//    ++time;
-
   }
 
-  /*for (uint8_t i = 0; i < switchNumbers; i++) {
-    Simulator::Schedule(Seconds(time), &SwitchScheduleGossip, switch_apps[i]);
+    for (uint8_t i = 0; i < switchNumbers; i++) {
+        Simulator::Schedule(Seconds(time), &SwitchSchedulePrintNetworkLog, switch_apps[i]);
+        ++time;
+    }
+
+    Simulator::Schedule(Seconds(time), &ManagerSchedulePrintNetworkLog, manager_apps[0]);
+
+
+    /*for (uint8_t i = 0; i < switchNumbers; i++) {
+      Simulator::Schedule(Seconds(time), &SwitchScheduleGossip, switch_apps[i]);
+      ++time;
+    }
+
+    Simulator::Schedule(Seconds(time), &SwitchScheduleDejoin, switch_apps[0]);
     ++time;
-  }
 
-  Simulator::Schedule(Seconds(time), &SwitchScheduleDejoin, switch_apps[0]);
-  ++time;
-
-  for (uint8_t i = 0; i < switchNumbers; i++) {
-    Simulator::Schedule(Seconds(time), &SwitchSchedulePrint, switch_apps[i]);
-  }*/
+    for (uint8_t i = 0; i < switchNumbers; i++) {
+      Simulator::Schedule(Seconds(time), &SwitchSchedulePrint, switch_apps[i]);
+    }*/
 
   Simulator::Run(); //run simulation
   Simulator::Destroy(); //end simulation
