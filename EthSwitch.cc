@@ -114,7 +114,8 @@ void EthSwitch::recvPkt(
             oss << "Gossip ->";
             if (!this->isMyNeighboursLogUpToDate(nShell->shell)) {
                 oss << "Different state than my neighbour";
-//                this->sendEntryFromIndexTo(this->getKeyByValue(dev), nShell->shell->sequenceNum + 1);
+                // TODO: Turn on the sending of entries
+                this->sendEntryFromIndexTo(this->getKeyByValue(dev), nShell->shell->sequenceNum + 1);
             } else {
                 oss << "State up-to-date compared to the neighbour's. No changes.";
             }
