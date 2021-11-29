@@ -20,12 +20,16 @@ protected:
     Ptr<Packet> createPacket(NetShell* nShell);
     void sendPacket(Ptr<NetDevice> nDev, Ptr<Packet> p);
     bool isFamilyMember(int8_t authorId);
-    void gossip();
     virtual void reconstructLog(ContentShell* cShell) = 0;
-    void sendLastEntryTo(int8_t authorId);
+    void sendLastEntryTo(int8_t authorId, string type = LOG_ENTRY);
+    void sendEntryFromIndexTo(int8_t authorId, int8_t seqFrom);
+    bool isMyNeighboursLogUpToDate(LogShell* lShell);
+    bool isSubSequentSeqNum(LogShell* lShell);
+    int8_t getKeyByValue(Ptr<NetDevice>);
 
 public:
     void printNetworkLog();
+    void gossip();
 
 
 

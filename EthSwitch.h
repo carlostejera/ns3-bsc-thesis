@@ -25,7 +25,7 @@ struct EthSwitch : public Application, public NetworkDevice {
         this->authorId = authorId;
         this->networkLog = new CommunicationLog(authorId);
         this->diary = new CommunicationLog(authorId);
-//        this->networkLog->initialiseLog();
+        this->networkLog->initialiseLog();
 //        this->diary->initialiseLog();
     }
     virtual ~EthSwitch() {}

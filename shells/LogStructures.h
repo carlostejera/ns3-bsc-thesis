@@ -28,6 +28,7 @@ static constexpr const char* LOG_ENTRY = "logEntry";
 static constexpr const char* ADD_MEMBER = "addMemberToNetwork";
 
 static constexpr const char* ASSIGN_MANAGER = "assignManager";
+static constexpr const char* GOSSIP = "gossip";
 
 
 struct ExpressionVisitor {

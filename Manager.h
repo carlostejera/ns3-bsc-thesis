@@ -18,8 +18,11 @@ public:
     virtual void reconstructLog(ContentShell* cShell) override;
 
 
-    Manager(int32_t id) : Application() { this->authorId = id;
-    this->networkLog = new CommunicationLog(this->authorId);
+    Manager(int32_t id) : Application() {
+        this->authorId = id;
+        this->networkLog = new CommunicationLog(this->authorId);
+        this->networkLog->initialiseLog();
+
     }
     virtual ~Manager() {}
 

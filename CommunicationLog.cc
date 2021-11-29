@@ -21,11 +21,10 @@ LogShell CommunicationLog::getLastEntry() {
     return this->log.back();
 }
 
-string CommunicationLog::readFrom(int seq) {
-//    for (auto &entry: this->log) {
-//        entry.sequenceNum
-//    }
-    return "";
+// TODO: Not useful
+LogShell CommunicationLog::readFrom(int seq) {
+    cout << seq << endl;
+    return this->log.back();
 }
 
 LogShell CommunicationLog::getEntryAt(int entryNum) {
@@ -33,7 +32,7 @@ LogShell CommunicationLog::getEntryAt(int entryNum) {
 }
 
 int8_t CommunicationLog::getCurrentSeqNum() {
-    return this->log.back().sequenceNum;
+    return this->getLastEntry().sequenceNum;
 }
 
 int CommunicationLog::getLogsSize() {

@@ -11,6 +11,10 @@ void SwitchScheduleJoin(Ptr<EthSwitch> dev) {
   dev->requestJoiningNetwork();
 }
 
+void SwitchScheduleGossip(Ptr<EthSwitch> dev) {
+    dev->gossip();
+}
+
 void SwitchSchedulePrintNetworkLog(Ptr<EthSwitch> dev) {
     dev->printNetworkLog();
 }
@@ -108,6 +112,11 @@ int main(int argc, char* argv[]) {
     Simulator::Schedule(Seconds(time), &SwitchScheduleJoin, switch_apps[i]);
     ++time;
   }
+
+    for (uint8_t i = 0; i < switchNumbers; i++) {
+        Simulator::Schedule(Seconds(time), &SwitchScheduleGossip, switch_apps[i]);
+        ++time;
+    }
 
     for (uint8_t i = 0; i < switchNumbers; i++) {
         Simulator::Schedule(Seconds(time), &SwitchSchedulePrintNetworkLog, switch_apps[i]);

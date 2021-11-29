@@ -25,7 +25,7 @@ class CommunicationLog {
     void initialiseLog();
     void addToLog(LogShell shell);
     void readLog();
-    string readFrom(int seq);
+    LogShell readFrom(int seq);
     LogShell getLastEntry();
     LogShell getEntryAt(int entryNum);
     int8_t getCurrentSeqNum();
