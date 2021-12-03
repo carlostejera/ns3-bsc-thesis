@@ -106,3 +106,20 @@ int8_t NetworkDevice::getKeyByValue(Ptr<NetDevice> senderDev) {
     cout << "something went wrong" << endl;
     return -1;
 }
+
+string NetworkDevice::getPrevHash() {
+    Printer p;
+    p.visit(this->networkLog->getLastEntry().shell);
+    string content = p.str();
+    const char* contentAsChar = content.c_str();
+    p.clearOss();
+
+    int sum = 0;
+    int i = 0;
+    while (contentAsChar[i] != '\0') {
+        sum += contentAsChar[i];
+        i++;
+    }
+
+    return to_string(sum);
+}
