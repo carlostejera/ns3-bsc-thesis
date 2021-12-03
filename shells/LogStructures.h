@@ -160,13 +160,13 @@ struct SomeFunctions {
 
         string cShellContent = lShellContent.substr(startIndex, end);
         // content logShellParams
-        m = shellSplit(cShellContent, " ");
-        ContentShell *cShellNew = new ContentShell(m["function"], m["params"], "someMsg");
+        m = shellSplit(cShellContent, "|");
+        ContentShell *cShellNew = new ContentShell(m["function"], m["params"], m["msg"]);
 
         //Params of log shell
         auto logShellParams = lShellContent.erase(lShellContent.find(C_SHELL));
 
-        m = shellSplit(logShellParams, " ");
+        m = shellSplit(logShellParams, "|");
 
         stringstream ssAuthor(m["author"]);
         stringstream ssSeq(m["seq"]);
@@ -182,7 +182,7 @@ struct SomeFunctions {
                 cShellNew
         );
         auto netShellParams = nShellContent.erase(nShellContent.find(L_SHELL));
-        m = shellSplit(netShellParams, " ");
+        m = shellSplit(netShellParams, "|");
         string tmp = m["receiver"];
         auto receiverPair = varSplitter(tmp, "/");
         const char *bruh = receiverPair.first.c_str();
