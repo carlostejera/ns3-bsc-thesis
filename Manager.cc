@@ -7,8 +7,7 @@ void Manager::registerUser(Ptr<NetDevice> dev, int8_t authorId) {
     oss << "New member arrived. Add " << to_string(authorId) << " to member list";
     this->neighbourMap.insert(make_pair(authorId, dev));
     this->familyMembers.push_back(authorId);
-
-    this->networkLog->addToLog(LogShell(this->networkLog->getCurrentSeqNum() + 1, "", this->authorId,
+    this->networkLog->addToLog(LogShell(this->networkLog->getCurrentSeqNum() + 1, this->getPrevHash(), this->authorId,
                                         new ContentShell(ADD_MEMBER, to_string(authorId), oss.str())));
     this->currSeq++;
 }
