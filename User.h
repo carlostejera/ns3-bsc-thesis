@@ -3,21 +3,34 @@
 
 #include "CommunicationLog.h"
 #include "shells/LogStructures.h"
+#include "NetworkDevice.h"
+
 using namespace ns3;
 using namespace std;
 
-class User : public Application {
+class User : public Application, public NetworkDevice {
 
 private:
-    map<int32_t, pair<ns3::Mac48Address, Ptr<NetDevice>>> connectedSwitches;
-    int8_t nodeId;
-    string communicationLog;
-    string otherLog;
+    std::map<int8_t, Ptr<NetDevice>> connectedSwitches;
+    int8_t authorId;
+    CommunicationLog* userLog;
+    map<uint8_t, CommunicationLog*> subscriptions;
+    int8_t interested;
 
 public:
     void recvPkt(Ptr<NetDevice>, Ptr<const Packet>, uint16_t proto, const Address& from, const Address& to, NetDevice::PacketType pt);
+    void joinNetwork();
+    void subscribe(int8_t authorId);
+    void plugAndPlay();
+    void printNetworkLog() override;
+    void pushLogToSwitch();
 
-    User(int32_t id) : Application() { this->nodeId = id; }
+
+
+    User(int32_t id) : Application() {
+        this->authorId = id;
+        this->userLog = new CommunicationLog(this->authorId);
+    }
     virtual ~User() {}
 
     virtual void StartApplication(void) {

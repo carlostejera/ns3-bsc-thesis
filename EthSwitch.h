@@ -9,24 +9,25 @@ using namespace std;
 
 
 struct EthSwitch : public Application, public NetworkDevice {
-    CommunicationLog* diary;
-    pair<int8_t, ns3::Mac48Address> manager;
+    pair<int8_t, Ptr<NetDevice>> manager;
+    vector<int8_t> connectedUser;
+    map<int8_t, Ptr<NetDevice>> pit;
+    map<int8_t, CommunicationLog*> logsOfUsers;
 
     void recvPkt(Ptr<NetDevice> dev, Ptr<const Packet> packet, uint16_t proto, const Address& from, const Address& to, NetDevice::PacketType pt );
     void requestJoiningNetwork();
-    void assignManager(ns3::Mac48Address, int8_t);
+    void assignManager(Ptr<NetDevice>, int8_t);
     void addMemberToNetwork(string params);
-    void reconstructLog(ContentShell* cShell) override;
-    void reconstructNetwork();
+    void printNetworkLog() override;
+    void sendPlugAndPlayConfirmation(Ptr<NetDevice>, int8_t);
+    bool isInList(vector <int8_t> v, int8_t authorId);
+    void forward(Ptr<NetDevice>, NetShell*, uint8_t hops);
 
 
 
     EthSwitch(int8_t authorId) {
         this->authorId = authorId;
         this->networkLog = new CommunicationLog(authorId);
-        this->diary = new CommunicationLog(authorId);
-        this->networkLog->initialiseLog();
-//        this->diary->initialiseLog();
     }
     virtual ~EthSwitch() {}
     virtual void StartApplication(void) {

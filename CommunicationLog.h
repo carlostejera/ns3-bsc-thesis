@@ -20,6 +20,11 @@ class CommunicationLog {
     CommunicationLog(int8_t owner) {
         this->owner = owner;
     }
+
+    CommunicationLog(int8_t owner, LogShell* logShell) {
+        this->owner = owner;
+        this->addToLog(*logShell);
+    }
     virtual ~CommunicationLog() {}
 
     void initialiseLog();
@@ -31,6 +36,8 @@ class CommunicationLog {
     int8_t getCurrentSeqNum();
     int getLogsSize();
     vector<LogShell> getLog();
+    void printLastEntry();
+    string getLogAsString();
 
     
 

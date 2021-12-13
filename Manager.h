@@ -15,14 +15,14 @@ public:
     void sendNetworkJoinConfirmation(int8_t authorId);
     void sendAllLogEntriesTo(int8_t authorReceiverId);
     void broadcastLastNetworkChange(int8_t exceptedReceiver);
-    virtual void reconstructLog(ContentShell* cShell) override;
 
 
     Manager(int32_t id) : Application() {
         this->authorId = id;
-        this->networkLog = new CommunicationLog(this->authorId);
-        this->networkLog->initialiseLog();
-
+        cout << "test"<< endl;
+        this->logs.insert({"manager" + to_string(this->authorId) + "/switch*", {this->authorId, new CommunicationLog(this->authorId)}});
+        this->logs["manager" + to_string(this->authorId) + "/switch*"].second->initialiseLog();
+        this->networkLog = this->logs["manager" + to_string(this->authorId) + "/switch*"].second;
     }
     virtual ~Manager() {}
 

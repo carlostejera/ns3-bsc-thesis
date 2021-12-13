@@ -2,7 +2,7 @@
 #include "User.h"
 #include "EthSwitch.h"
 #include "Manager.h"
-
+#include "GlobalsValues.h"
 
 using namespace ns3;
 using namespace std;
@@ -15,13 +15,23 @@ void SwitchScheduleGossip(Ptr <EthSwitch> dev) {
     dev->gossip();
 }
 
-void SwitchSchedulePrintNetworkLog(Ptr <EthSwitch> dev) {
+void UserScheduleJoin(Ptr<User> dev) {
+    dev->plugAndPlay();
+}
+
+void UserScheduleSubscribe(Ptr<User> dev, uint8_t authorId) {
+    dev->subscribe(authorId);
+}
+
+void UserSchedulePushLog(Ptr<User> dev) {
+    dev->pushLogToSwitch();
+}
+
+template <class T>
+void SchedulePrintNetworkLog(Ptr <T> dev) {
     dev->printNetworkLog();
 }
 
-void ManagerSchedulePrintNetworkLog(Ptr <Manager> dev) {
-    dev->printNetworkLog();
-}
 template <class T>
 void addApplicationToNodes(Ptr<T>* apps, NodeContainer nodes, uint32_t beginFrom) {
     for (uint32_t i = 0; i < nodes.GetN(); i++) {
@@ -47,8 +57,10 @@ int main(int argc, char *argv[]) {
 
     CommandLine cmd;
     cmd.Parse(argc, argv);
-
+    cout << VERBOSE << endl;
     Time::SetResolution(Time::NS);
+    Packet::EnablePrinting();
+    Packet::EnableChecking();
 
     uint32_t userNumbers = 2;
     uint32_t switchNumbers = 6;
@@ -88,7 +100,12 @@ int main(int argc, char *argv[]) {
     addApplicationToNodes<EthSwitch>(switch_apps, switch_nodes, ethId);
     addApplicationToNodes<Manager>(manager_apps, manager_nodes, managerId);
 
+
+
+    p2p.EnablePcap("test.pcap", manager_apps[0]->GetNode()->GetDevice(0), true, true);
+
     AnimationInterface anim("topology_bcs.xml");
+    anim.EnablePacketMetadata(true);
     string pcPath = "/mnt/c/Users/carlosandrestejera/Documents/university/bachelorthesis/source/ns-3.30/scratch/ns3-bsc-thesis/img/pc.svg";
     string switchPath = "/mnt/c/Users/carlosandrestejera/Documents/university/bachelorthesis/source/ns-3.30/scratch/ns3-bsc-thesis/img/eth.svg";
     string managerPath = "/mnt/c/Users/carlosandrestejera/Documents/university/bachelorthesis/source/ns-3.30/scratch/ns3-bsc-thesis/img/manager.svg";
@@ -112,24 +129,45 @@ int main(int argc, char *argv[]) {
 
     confNodes(&anim, manager_nodes.Get(0), managerPath, "Manager" + to_string(managerId), 50, 50);
 
-    int time = 1;
+    uint64_t time = 100;
+    // Switches joining network
     for (uint8_t i = 0; i < switchNumbers; i++) {
-        Simulator::Schedule(Seconds(time), &SwitchScheduleJoin, switch_apps[i]);
-        ++time;
+        Simulator::Schedule(MilliSeconds(time), &SwitchScheduleJoin, switch_apps[i]);
     }
 
-    for (uint8_t i = 0; i < switchNumbers; i++) {
-        Simulator::Schedule(Seconds(time), &SwitchScheduleGossip, switch_apps[i]);
-        ++time;
+    // Gossiping
+//    for (uint8_t i = 0; i < switchNumbers; i++) {
+//        Simulator::Schedule(Seconds(time), &SwitchScheduleGossip, switch_apps[i]);
+//        ++time;
+//    }
+    cout << VERBOSE << endl;
+
+    for (uint8_t i = 0; i < userNumbers; i++) {
+        Simulator::Schedule(Seconds(time), &UserScheduleJoin, user_apps[i]);
+        time += 100;
     }
+    cout << VERBOSE << endl;
+
+
+    cout << VERBOSE << endl;
+
+    Simulator::Schedule(Seconds(time), &UserSchedulePushLog, user_apps[1]);
+//    Simulator::Schedule(Seconds(time), &UserSchedulePushLog, user_apps[1]);
+//    Simulator::Schedule(Seconds(time), &UserSchedulePushLog, user_apps[1]);
+    time += 100;
+
+    Simulator::Schedule(Seconds(time), &UserScheduleSubscribe, user_apps[0], 1);
+
+    time += 100;
 
     for (uint8_t i = 0; i < switchNumbers; i++) {
-        Simulator::Schedule(Seconds(time), &SwitchSchedulePrintNetworkLog, switch_apps[i]);
-        ++time;
+        Simulator::Schedule(Seconds(time), &SchedulePrintNetworkLog<EthSwitch>, switch_apps[i]);
     }
+    Simulator::Schedule(Seconds(time), &SchedulePrintNetworkLog<Manager>, manager_apps[0]);
 
-    Simulator::Schedule(Seconds(time), &ManagerSchedulePrintNetworkLog, manager_apps[0]);
-
+    for (uint8_t i = 0; i < userNumbers; i++) {
+        Simulator::Schedule(Seconds(time), &SchedulePrintNetworkLog<User>, user_apps[i]);
+    }
 
     Simulator::Run(); //run simulation
     Simulator::Destroy(); //end simulation

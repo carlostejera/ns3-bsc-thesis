@@ -8,8 +8,16 @@
 #include "ns3/applications-module.h"
 #include "ns3/netanim-module.h"
 #include <map>
+#include "../Enums.h"
+#include "ns3/ptr.h"
+#include "ns3/packet.h"
+#include "ns3/header.h"
+#include "ns3/simulator.h"
+#include <iostream>
+#include "ns3/type-id.h"
 
 using namespace std;
+using namespace ns3;
 
 struct ContentShell;
 struct LogShell;
@@ -97,12 +105,14 @@ struct NetShell : public Shell {
     int8_t receiverId;
     string type;
     LogShell* shell;
+    uint8_t hops;
 
-    NetShell(ns3::Mac48Address mac, int8_t receiverId, string type, LogShell* shell){
+    NetShell(ns3::Mac48Address mac, int8_t receiverId, string type, uint8_t hops, LogShell* shell){
         this->macReceiver = mac;
         this->receiverId = receiverId;
         this->type = type;
         this->shell = shell;
+        this->hops = hops;
     }
 
     void accept(ExpressionVisitor* visitor) override {
@@ -183,6 +193,9 @@ struct SomeFunctions {
         );
         auto netShellParams = nShellContent.erase(nShellContent.find(L_SHELL));
         m = shellSplit(netShellParams, "|");
+        stringstream ssHops(m["hops"]);
+        int hops;
+        ssHops >> hops;
         string tmp = m["receiver"];
         auto receiverPair = varSplitter(tmp, "/");
         const char *bruh = receiverPair.first.c_str();
@@ -194,6 +207,7 @@ struct SomeFunctions {
                 ns3::Mac48Address(bruh),
                 receiverId,
                 m["type"],
+                hops,
                 lShellNew
         );
         return resultShell;
@@ -205,3 +219,29 @@ struct SomeFunctions {
     }
 };
 
+class MyHeader : public Header {
+public:
+
+    MyHeader();
+
+    virtual ~MyHeader();
+
+    void SetData(uint16_t data);
+
+    uint16_t GetData(void) const;
+
+    static TypeId GetTypeId(void);
+
+    virtual TypeId GetInstanceTypeId(void) const;
+
+    virtual void Print(std::ostream &os) const;
+
+    virtual void Serialize(Buffer::Iterator start) const;
+
+    virtual uint32_t Deserialize(Buffer::Iterator start);
+
+    virtual uint32_t GetSerializedSize(void) const;
+
+private:
+    uint16_t m_data;
+};

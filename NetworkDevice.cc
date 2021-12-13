@@ -26,8 +26,13 @@ Ptr <Packet> NetworkDevice::createPacket(NetShell *nShell) {
     string netShellString = stringAssembler.str();
     stringAssembler.clearOss();
     uint8_t* text = (uint8_t*) netShellString.c_str();
+    auto p = Create<Packet>(text, strlen((char *) text));
+//    MyHeader sourceHeader;
+//    sourceHeader.SetData(2);
+//    p->AddHeader(sourceHeader);
 
-    return Create<Packet>(text, strlen((char *) text));
+    p->Print(cout);
+    return p;
 }
 
 void NetworkDevice::sendPacket(Ptr<NetDevice> nDev, Ptr<Packet> p) {
@@ -45,10 +50,9 @@ void NetworkDevice::printNetworkLog() {
     Printer stringAssembler;
     ostringstream oss;
     oss << "-----" << "Device ID: " << to_string(this->authorId) << "-----" << endl;
-    for (LogShell lShell : this->networkLog->getLog()) {
-        stringAssembler.visit(&lShell);
-        oss << stringAssembler.str() << endl;
-        stringAssembler.clearOss();
+    for (auto entry : this->logs) {
+        oss << entry.first << ":" <<endl;
+        oss << entry.second.second->getLogAsString() << endl;
     }
     oss  << "Neighbours: " << endl;
     for (auto iter = this->neighbourMap.begin(); iter != this->neighbourMap.end(); iter++) {
@@ -68,7 +72,7 @@ void NetworkDevice::sendLastEntryTo(int8_t authorId, string type) {
     auto receiverNetDevice = this->neighbourMap[authorId];
     auto receiverMac = ns3::Mac48Address::ConvertFrom(receiverNetDevice->GetAddress());
     LogShell lShell = this->networkLog->getLastEntry();
-    NetShell* nShell = new NetShell(receiverMac, authorId, type, &lShell);
+    NetShell* nShell = new NetShell(receiverMac, authorId, type, 0, &lShell);
     Ptr<Packet> p = this->createPacket(nShell);
     this->sendPacket(receiverNetDevice, p);
 }
@@ -81,15 +85,26 @@ bool NetworkDevice::isMyNeighboursLogUpToDate(LogShell *lShell) {
     return lShell->sequenceNum >= this->networkLog->getCurrentSeqNum();
 }
 
-void NetworkDevice::sendEntryFromIndexTo(int8_t authorId, int8_t seqFrom) {
+void NetworkDevice::sendEntryFromIndexTo(CommunicationLog* log, int8_t authorId, int8_t seqFrom, string type) {
     auto receiverNetDevice = this->neighbourMap[authorId];
+    cout << "prrrrr" << endl;
     cout << receiverNetDevice->GetAddress() << endl;
+    cout << "prrrrr" << endl;
 
+    Printer p;
+    LogShell lShell = log->getLastEntry();
+    cout << "fck" << endl;
+    LogShell* logShell_p = &lShell;
+    p.visit(logShell_p);
+    cout << p.str() << endl;
     auto receiverMac = ns3::Mac48Address::ConvertFrom(receiverNetDevice->GetAddress());
     cout << receiverMac << endl;
-    for (int i = seqFrom; i <= this->networkLog->getCurrentSeqNum(); i++) {
-        auto lShell = this->networkLog->getEntryAt(i);
-        NetShell* nShell = new NetShell(receiverMac, authorId, LOG_ENTRY, &lShell);
+    cout << log->getLog().size() << endl;
+    cout << type << endl;
+    for (int i = seqFrom; i <= log->getCurrentSeqNum(); i++) {
+        cout << "hallo" << endl;
+        auto lShell = log->getEntryAt(i);
+        NetShell* nShell = new NetShell(receiverMac, authorId, type, 0, &lShell);
         Ptr<Packet> p = this->createPacket(nShell);
         this->sendPacket(receiverNetDevice, p);
     }
@@ -107,9 +122,11 @@ int8_t NetworkDevice::getKeyByValue(Ptr<NetDevice> senderDev) {
     return -1;
 }
 
-string NetworkDevice::getPrevHash() {
+string NetworkDevice::getPrevHash(CommunicationLog* log) {
+    cout << "sup" << endl;
     Printer p;
-    p.visit(this->networkLog->getLastEntry().shell);
+    p.visit(log->getLastEntry().shell);
+    cout << "sup" << endl;
     string content = p.str();
     const char* contentAsChar = content.c_str();
     p.clearOss();
@@ -122,4 +139,47 @@ string NetworkDevice::getPrevHash() {
     }
 
     return to_string(sum);
+}
+
+int8_t NetworkDevice::convertStringToId(string id) {
+    int authorId;
+    stringstream ssAuthorId(id);
+    ssAuthorId >> authorId;
+    return authorId;
+}
+
+bool NetworkDevice::logExists(NetShell* nShell) {
+    return this->logs.find(nShell->type) != this->logs.end();
+}
+
+void NetworkDevice::addLog(NetShell* nShell) {
+    this->logs.insert({nShell->type, {nShell->shell->authorId, new CommunicationLog(nShell->shell->authorId, nShell->shell)}});
+}
+
+bool NetworkDevice::concatenateEntry(NetShell* nShell) {
+    string s = nShell->type;
+    CommunicationLog* l = this->logs[s].second;
+    LogShell* p = nShell->shell;
+
+    if (l->getCurrentSeqNum() >= p->sequenceNum) {
+        return false;
+    }
+
+    l->addToLog(*p);
+    return true;
+}
+
+EnumFunctions NetworkDevice::hash(string input) {
+    if (input == "addMemberToNetwork") return ADD_MEMBER_TO_NETWORK;
+    if (input == "plugAndPlay") return PLUG_AND_PLAY;
+    if (input == "assignManager") return ASSIGN_MAN;
+    if (input == "addSwitch") return ADD_SWITCH;
+    if (input == "addToNetwork") return ADD_TO_NETWORK;
+    if (input == "getContentFrom") return GET_CONTENT_FROM;
+    if (input == "pushContent") return UPDATE_CONTENT_FROM;
+    return NONE;
+}
+
+bool NetworkDevice::isNeighbour(int8_t authorId) {
+    return this->neighbourMap.find(authorId) != this->neighbourMap.end();
 }

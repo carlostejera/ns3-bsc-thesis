@@ -42,3 +42,23 @@ int CommunicationLog::getLogsSize() {
 vector<LogShell> CommunicationLog::getLog() {
     return this->log;
 }
+
+void CommunicationLog::printLastEntry() {
+    Printer p;
+    cout << "ok" << endl;
+    LogShell l = this->getLastEntry();
+    p.visit(&l);
+    cout << p.str() << endl;
+    p.clearOss();
+}
+
+string CommunicationLog::getLogAsString() {
+    Printer printer;
+    ostringstream oss;
+    for (auto log: this->log) {
+        printer.visit(&log);
+        oss << printer.str() << endl;
+        printer.clearOss();
+    }
+    return oss.str();
+}
