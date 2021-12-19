@@ -3,8 +3,18 @@
 using namespace ns3;
 using namespace std;
 
-void CommunicationLog::addToLog(LogShell shell) {
-  this->log.push_back(shell);
+bool CommunicationLog::addToLog(LogShell shell) {
+
+    if (this->log.empty()) {
+        this->log.push_back(shell);
+        return true;
+    }
+    if (shell.sequenceNum == this->getCurrentSeqNum() + 1 && shell.prevEventHash == this->createHash(this->getLastEntry())) {
+        this->log.push_back(shell);
+        return true;
+    }
+    cout << "i dont need that" << endl;
+    return false;
 }
 
 void CommunicationLog::initialiseLog() {
@@ -32,7 +42,7 @@ LogShell CommunicationLog::getEntryAt(int entryNum) {
 }
 
 int8_t CommunicationLog::getCurrentSeqNum() {
-    return this->getLastEntry().sequenceNum;
+    return this->log.empty() ? -1 : this->getLastEntry().sequenceNum;
 }
 
 int CommunicationLog::getLogsSize() {
@@ -62,3 +72,18 @@ string CommunicationLog::getLogAsString() {
     }
     return oss.str();
 }
+
+string CommunicationLog::createHash(LogShell entry) {
+    Printer p;
+    p.visit(entry.shell);
+    string content = p.str();
+    const char* contentAsChar = content.c_str();
+    p.clearOss();
+
+    int sum = 0;
+    int i = 0;
+    while (contentAsChar[i] != '\0') {
+        sum += contentAsChar[i];
+        i++;
+    }
+    return to_string(sum);}

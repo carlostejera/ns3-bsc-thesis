@@ -28,7 +28,7 @@ class CommunicationLog {
     virtual ~CommunicationLog() {}
 
     void initialiseLog();
-    void addToLog(LogShell shell);
+    bool addToLog(LogShell shell);
     void readLog();
     LogShell readFrom(int seq);
     LogShell getLastEntry();
@@ -38,6 +38,7 @@ class CommunicationLog {
     vector<LogShell> getLog();
     void printLastEntry();
     string getLogAsString();
+    string createHash(LogShell shell);
 
     
 

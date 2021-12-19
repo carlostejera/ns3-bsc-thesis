@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
     Packet::EnablePrinting();
     Packet::EnableChecking();
 
-    uint32_t userNumbers = 2;
+    uint32_t userNumbers = 3;
     uint32_t switchNumbers = 6;
     uint32_t managerNumbers = 1;
 
@@ -90,6 +90,7 @@ int main(int argc, char *argv[]) {
     //Connect users to switches
     p2p.Install(user_nodes.Get(0), switch_nodes.Get(0));
     p2p.Install(user_nodes.Get(1), switch_nodes.Get(3));
+    p2p.Install(user_nodes.Get(2), switch_nodes.Get(5));
 
     Ptr <User> user_apps[userNumbers];
     Ptr <EthSwitch> switch_apps[switchNumbers];
@@ -102,7 +103,7 @@ int main(int argc, char *argv[]) {
 
 
 
-    p2p.EnablePcap("test.pcap", manager_apps[0]->GetNode()->GetDevice(0), true, true);
+    p2p.EnablePcap("test.pcap", user_nodes.Get(1)->GetDevice(0), true, true);
 
     AnimationInterface anim("topology_bcs.xml");
     anim.EnablePacketMetadata(true);
@@ -129,34 +130,32 @@ int main(int argc, char *argv[]) {
 
     confNodes(&anim, manager_nodes.Get(0), managerPath, "Manager" + to_string(managerId), 50, 50);
 
-    uint64_t time = 100;
+    uint64_t time = 2000;
     // Switches joining network
     for (uint8_t i = 0; i < switchNumbers; i++) {
         Simulator::Schedule(MilliSeconds(time), &SwitchScheduleJoin, switch_apps[i]);
     }
 
     // Gossiping
-//    for (uint8_t i = 0; i < switchNumbers; i++) {
-//        Simulator::Schedule(Seconds(time), &SwitchScheduleGossip, switch_apps[i]);
-//        ++time;
-//    }
+    for (uint8_t i = 0; i < switchNumbers; i += 2) {
+        Simulator::Schedule(Seconds(time), &SwitchScheduleGossip, switch_apps[i]);
+        time += 300;
+    }
     cout << VERBOSE << endl;
 
     for (uint8_t i = 0; i < userNumbers; i++) {
         Simulator::Schedule(Seconds(time), &UserScheduleJoin, user_apps[i]);
         time += 100;
     }
-    cout << VERBOSE << endl;
 
-
-    cout << VERBOSE << endl;
-
-    Simulator::Schedule(Seconds(time), &UserSchedulePushLog, user_apps[1]);
-//    Simulator::Schedule(Seconds(time), &UserSchedulePushLog, user_apps[1]);
-//    Simulator::Schedule(Seconds(time), &UserSchedulePushLog, user_apps[1]);
-    time += 100;
+    for (int i = 0; i < 3; i++) {
+        Simulator::Schedule(Seconds(time), &UserSchedulePushLog, user_apps[1]);
+        time += 100;
+    }
 
     Simulator::Schedule(Seconds(time), &UserScheduleSubscribe, user_apps[0], 1);
+    time += 1000;
+    Simulator::Schedule(Seconds(time), &UserScheduleSubscribe, user_apps[2], 1);
 
     time += 100;
 

@@ -16,6 +16,7 @@ private:
     CommunicationLog* userLog;
     map<uint8_t, CommunicationLog*> subscriptions;
     int8_t interested;
+    int count = 0;
 
 public:
     void recvPkt(Ptr<NetDevice>, Ptr<const Packet>, uint16_t proto, const Address& from, const Address& to, NetDevice::PacketType pt);

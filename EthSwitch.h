@@ -22,6 +22,7 @@ struct EthSwitch : public Application, public NetworkDevice {
     void sendPlugAndPlayConfirmation(Ptr<NetDevice>, int8_t);
     bool isInList(vector <int8_t> v, int8_t authorId);
     void forward(Ptr<NetDevice>, NetShell*, uint8_t hops);
+    void gossip() override;
 
 
 

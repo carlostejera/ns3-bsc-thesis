@@ -87,22 +87,13 @@ bool NetworkDevice::isMyNeighboursLogUpToDate(LogShell *lShell) {
 
 void NetworkDevice::sendEntryFromIndexTo(CommunicationLog* log, int8_t authorId, int8_t seqFrom, string type) {
     auto receiverNetDevice = this->neighbourMap[authorId];
-    cout << "prrrrr" << endl;
-    cout << receiverNetDevice->GetAddress() << endl;
-    cout << "prrrrr" << endl;
 
     Printer p;
     LogShell lShell = log->getLastEntry();
-    cout << "fck" << endl;
     LogShell* logShell_p = &lShell;
     p.visit(logShell_p);
-    cout << p.str() << endl;
     auto receiverMac = ns3::Mac48Address::ConvertFrom(receiverNetDevice->GetAddress());
-    cout << receiverMac << endl;
-    cout << log->getLog().size() << endl;
-    cout << type << endl;
     for (int i = seqFrom; i <= log->getCurrentSeqNum(); i++) {
-        cout << "hallo" << endl;
         auto lShell = log->getEntryAt(i);
         NetShell* nShell = new NetShell(receiverMac, authorId, type, 0, &lShell);
         Ptr<Packet> p = this->createPacket(nShell);

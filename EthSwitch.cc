@@ -110,6 +110,19 @@ void EthSwitch::sendPlugAndPlayConfirmation(Ptr<NetDevice> nDev, int8_t author) 
 
 }
 
+void EthSwitch::gossip() {
+    auto log = this->logs["manager100/switch*"].second;
+    for (auto entry : this->neighbourMap) {
+        LogShell tmp = log->getLastEntry();
+        LogShell* p = &tmp;
+        auto nShell = new NetShell(Mac48Address::ConvertFrom(entry.second->GetAddress()), entry.first, "manager100/switch*", 0, p);
+        if (entry.second != this->manager.second) {
+            auto p = this->createPacket(nShell);
+            this->sendPacket(entry.second, p);
+        }
+    }
+}
+
 
 
 void EthSwitch::recvPkt(
@@ -174,13 +187,13 @@ void EthSwitch::recvPkt(
 
         if (this->hash(nShell->shell->shell->function) == GET_CONTENT_FROM) {
 
-
-            if (this->isNeighbour(this->convertStringToId(nShell->shell->shell->params))) {
+            // TODO: Changer hard coded condition
+            if (this->isNeighbour(this->convertStringToId(nShell->shell->shell->params)) || this->logs.find("user1/user*") != this->logs.end()) {
                 cout << "he is here" << endl;
                 this->sendEntryFromIndexTo(this->logs["user" + nShell->shell->shell->params + "/user*"].second, this->getKeyByValue(dev), 0, "user" + nShell->shell->shell->params + "/user*");
             } else {
-                nShell->shell->authorId = this->authorId;
-                this->logs.insert({"switch" + to_string(this->authorId) + "/user" + nShell->shell->shell->params, {this->convertStringToId(nShell->shell->shell->params), new CommunicationLog(this->authorId, nShell->shell)}});
+//                nShell->shell->authorId = this->authorId;
+                this->logs.insert({nShell->type, {this->convertStringToId(nShell->shell->shell->params), new CommunicationLog(this->authorId, nShell->shell)}});
                 this->forward(dev, nShell, ++nShell->hops);
                 oss << "& and forwarding request";
             }

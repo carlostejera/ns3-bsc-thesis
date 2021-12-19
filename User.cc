@@ -51,8 +51,8 @@ void User::subscribe(int8_t authorId) {
         auto cShell = new ContentShell("getContentFrom", to_string(authorId),
                                        "Subscribe the author " + to_string(authorId));
         auto lShell = new LogShell(0, "", this->authorId, cShell);
-        this->logs.insert({"switch" + to_string(this->authorId) + "/user" + to_string(authorId),{authorId, new CommunicationLog(this->authorId)}});
-        auto nShell = new NetShell(mac, 1, "switch" + to_string(this->authorId) + "/user" + to_string(authorId), 0, lShell);
+        this->logs.insert({"user" + to_string(this->authorId) + "/user" + to_string(authorId),{authorId, new CommunicationLog(this->authorId)}});
+        auto nShell = new NetShell(mac, 1, "user" + to_string(this->authorId) + "/user" + to_string(authorId), 0, lShell);
         auto p = this->createPacket(nShell);
         this->sendPacket(item.second, p);
     }
@@ -107,7 +107,9 @@ void User::printNetworkLog() {
 
 
 void User::pushLogToSwitch() {
-    this->userLog->addToLog(LogShell(0, "", this->authorId, new ContentShell("pushContent", "", "Push content out")));
+    this->userLog->addToLog(LogShell(this->count, this->userLog->getLog().empty() ? "" : this->getPrevHash(this->userLog), this->authorId, new ContentShell("pushContent", "", "This is my Computer log entry" +
+            to_string(this->count))));
+    this->count += 1;
     LogShell lShell = this->userLog->getLastEntry();
     LogShell *shell_p = &lShell;
 

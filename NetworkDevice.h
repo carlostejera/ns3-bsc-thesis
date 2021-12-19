@@ -37,7 +37,8 @@ protected:
 
 public:
     virtual void printNetworkLog();
-    void gossip();
+
+    virtual void gossip();
 
 
 
