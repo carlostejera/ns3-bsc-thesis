@@ -171,6 +171,23 @@ EnumFunctions NetworkDevice::hash(string input) {
     return NONE;
 }
 
-bool NetworkDevice::isNeighbour(int8_t authorId) {
+bool NetworkDevice::isNeighbourToAdd(const int8_t authorId, const uint8_t hops) {
+    return this->neighbourMap.find(authorId) == this->neighbourMap.end() && hops == 0;
+}
+
+bool NetworkDevice::isNeighbour(const int8_t authorId) {
     return this->neighbourMap.find(authorId) != this->neighbourMap.end();
 }
+
+
+void NetworkDevice::addNeighbour(int8_t authorId, Ptr <NetDevice> dev) {
+    this->packetOss << "Adding neighbour: " << to_string(authorId);
+    this->neighbourMap.insert(make_pair(authorId, dev));
+}
+
+void NetworkDevice::printPacketResult() {
+    cout << this->packetOss.str() << endl;
+    this->packetOss.str("");
+
+}
+
