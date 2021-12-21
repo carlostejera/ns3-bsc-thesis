@@ -78,10 +78,15 @@ void Manager::recvPkt(
 
     if (nShell->type.find("/manager") != string::npos && nShell->receiverId == 127) {
         if (!this->logExists(nShell)) {
-            this->addLog(nShell);
+            this->concatenateEntry(nShell);
             oss << "& adding new log " << nShell->type;
         }
-    } else {
+    } else if (nShell->type.find("manager" + to_string(this->authorId) + "/switch*") != string::npos) {
+        auto seq = nShell->shell->sequenceNum;
+        this->sendEntryFromIndexTo(this->networkLog, this->getKeyByValue(dev), seq, "manager" + to_string(this->authorId) + "/switch*");
+    }
+
+    else {
         return;
     }
 
@@ -103,4 +108,12 @@ void Manager::recvPkt(
     if (VERBOSE) {
         cout << oss.str() << endl;
     }
+}
+
+bool Manager::processReceivedSwitchPacket(NetShell *netShell, Ptr <NetDevice> dev) {
+    return true;
+}
+
+void Manager::processReceivedUserPacket(NetShell *netShell, Ptr <NetDevice> dev) {
+
 }
