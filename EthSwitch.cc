@@ -56,6 +56,7 @@ void EthSwitch::printNetworkLog() {
     NetworkDevice::printNetworkLog();
     ostringstream oss;
     Printer stringAssembler;
+    oss << "Manager: " << to_string(this->manager.first) << endl;
     oss << "Connected users:";
     for (auto user : this->connectedUser) {
         oss << to_string(user) << " ";
@@ -111,14 +112,38 @@ void EthSwitch::sendPlugAndPlayConfirmation(Ptr<NetDevice> nDev, int8_t author) 
 }
 
 void EthSwitch::gossip() {
-    auto log = this->logs["manager100/switch*"].second;
+    string randomLogType;
+    int count = 0;
+    do {
+        if (count == 10) {
+            return;
+        }
+        map<string, pair<int8_t , CommunicationLog*>>::iterator item = this->logs.begin();
+        advance(item, rand() % this->logs.size());
+        randomLogType = item->first;
+        cout << this->authorId << endl;
+        cout << (randomLogType.find("switch" + to_string(this->authorId) + "/") == string::npos) << endl;
+        count++;
+    } while (randomLogType.find("switch" + to_string(this->authorId) + "/") != string::npos);
+    auto log = this->logs[randomLogType].second;
+    NetShell* nShell;
     for (auto entry : this->neighbourMap) {
-        LogShell tmp = log->getLastEntry();
-        LogShell* p = &tmp;
-        auto nShell = new NetShell(Mac48Address::ConvertFrom(entry.second->GetAddress()), entry.first, "manager100/switch*", 0, p);
-        if (entry.second != this->manager.second) {
-            auto p = this->createPacket(nShell);
-            this->sendPacket(entry.second, p);
+        if (log->getLog().empty()) {
+            auto cShell = new ContentShell("f", "p", "I have no content");
+            auto lShell = new LogShell(-1, "", this->manager.first, cShell);
+            nShell = new NetShell(Mac48Address::ConvertFrom(entry.second->GetAddress()), entry.first, randomLogType, 0, lShell);
+//            if (entry.first != this->manager.first) {
+                auto packet = this->createPacket(nShell);
+                this->sendPacket(entry.second, packet);
+//            }
+        } else {
+            LogShell tmp = log->getLastEntry();
+            LogShell* p = &tmp;
+            nShell = new NetShell(Mac48Address::ConvertFrom(entry.second->GetAddress()), entry.first, randomLogType, 0, p);
+//            if (entry.first != this->manager.first) {
+                auto packet = this->createPacket(nShell);
+                this->sendPacket(entry.second, packet);
+//            }
         }
     }
 }
@@ -132,185 +157,69 @@ void EthSwitch::recvPkt(
         const Address &from,
         const Address &to,
         NetDevice::PacketType pt) {
-    ostringstream oss;
-    oss << "------------------SwitchPacket-------------------" << endl
-        << "i am " << to_string(this->authorId) << endl;
 
 
     // Reads packet size and prepares the transformation of bytes to string
     string netShell = this->readPacket(packet);
+
     // Transforms the string to a net shell object
     NetShell* nShell = SomeFunctions::shell(netShell);
-    oss << "Received: " << netShell << endl;
 
-    oss << "Result: ";
+
     // Records every sender to keep a map of the neighbours
-    if (this->neighbourMap.find(this->getKeyByValue(dev)) == this->neighbourMap.end() && nShell->hops == 0) {
-        oss << "Adding neighbour: " << to_string(nShell->shell->authorId);
-        this->neighbourMap.insert(make_pair(nShell->shell->authorId, dev));
+    if (this->isNeighbourToAdd(this->getKeyByValue(dev), nShell->hops)) {
+        this->addNeighbour(nShell->shell->authorId, dev);
     }
+
+
+    Ptr<Packet> test = Create<Packet>(*packet);
+    if (this->rem->IsCorrupt(test)) {
+        return;
+    }
+    this->packetOss << "------------------SwitchPacket-------------------" << endl
+        << "i am " << to_string(this->authorId) << endl;
+
+
+    this->packetOss << "Received: " << netShell << endl;
+    this->packetOss << "From: " << ns3::Mac48Address::ConvertFrom(dev->GetAddress()) << endl;
+    this->packetOss << "Result: ";
+
 
     // Checks if it is the receiver
-    cout << "here" << endl;
     if (nShell->type.find("/manager") != string::npos) {
-        cout << "dropping packet" <<endl;
-        return;
+        this->packetOss << "Dropping packet" << endl;
+
     } else if (nShell->type.find("/switch") != string::npos) {
-        cout << "test" << endl;
 
-        if (nShell->receiverId == this->authorId) {
-            // Checks what kind of log it is -> If it is not known, a new log will be recorded, since the packet is addressed to this switch
-            if (this->logExists(nShell)) {
-                this->concatenateEntry(nShell);
-                oss << "& concatenating entry " << to_string(nShell->shell->sequenceNum) << " in " << nShell->type << endl;
-            } else {
-                this->addLog(nShell);
-                oss << "& adding new log " << nShell->type << endl;
-                if (nShell->type.find("manager") != string::npos) {
-                    this->manager = {nShell->shell->authorId, dev};
-                    auto tmp = this->logs["switch" + to_string(this->authorId) + "/manager*"];
-                    this->logs["switch" + to_string(this->authorId) + "/manager" + to_string(this->manager.first)] = tmp;
-                    this->logs.erase("switch" + to_string(this->authorId) + "/manager*");
-                    oss << "& assigning manager " << endl;
-                }
+        if (this->processReceivedSwitchPacket(nShell, dev)) {
+            auto lastEntry = this->logs[nShell->type].second->getLastEntry();
+            //Dropping packet if this switch is not the receiver
+            switch (this->hash(lastEntry.shell->function)) {
+                case ADD_MEMBER_TO_NETWORK:
+                    this->addMemberToNetwork(lastEntry.shell->params);
+                    break;
+                case PLUG_AND_PLAY:
+                    this->sendPlugAndPlayConfirmation(dev, nShell->shell->authorId);
+                    break;
+                case GET_CONTENT_FROM:
+                    break;
+                default:
+                    break;
             }
-        } else {
-            // For all switches
-            this->addLog(nShell);
-            oss << "& adding new log " << nShell->type << endl;
         }
-
-
 
     } else if (nShell->type.find("/user") != string::npos) {
-
-
-        if (this->hash(nShell->shell->shell->function) == GET_CONTENT_FROM) {
-
-            // TODO: Changer hard coded condition
-            if (this->isNeighbour(this->convertStringToId(nShell->shell->shell->params)) || this->logs.find("user1/user*") != this->logs.end()) {
-                cout << "he is here" << endl;
-                this->sendEntryFromIndexTo(this->logs["user" + nShell->shell->shell->params + "/user*"].second, this->getKeyByValue(dev), 0, "user" + nShell->shell->shell->params + "/user*");
-            } else {
-//                nShell->shell->authorId = this->authorId;
-                this->logs.insert({nShell->type, {this->convertStringToId(nShell->shell->shell->params), new CommunicationLog(this->authorId, nShell->shell)}});
-                this->forward(dev, nShell, ++nShell->hops);
-                oss << "& and forwarding request";
-            }
-
-
-        } else if (this->hash(nShell->shell->shell->function) == UPDATE_CONTENT_FROM) {
-            cout << "*******" << endl;
-            cout << "should be here" << endl;
-
-            // User pushes to the connected switch
-            if (nShell->type == "user" + to_string(nShell->shell->authorId) + "/user*" && this->isNeighbour(nShell->shell->authorId)) {
-                if (this->logExists(nShell)) {
-                    if (this->concatenateEntry(nShell)) {
-                        oss << "& concatenating entry " << to_string(nShell->shell->sequenceNum) << " in "
-                            << nShell->type << endl;
-                    }
-                } else {
-                    this->addLog(nShell);
-                    oss << "&& adding new log " << nShell->type << endl;
-                }
-            } else {
-                if (this->logExists(nShell)) {
-                    if (this->concatenateEntry(nShell)) {
-                        oss << "&&& concatenating entry " << to_string(nShell->shell->sequenceNum) << " in " << nShell->type << endl;
-                        this->forward(dev, nShell, ++nShell->hops);
-                    }
-
-                } else {
-                    this->addLog(nShell);
-                    oss << "&&&& adding new log " << nShell->type << endl;
-                    this->forward(dev, nShell, ++nShell->hops);
-
-                }
-                cout << "and heeeeere" << endl;
-            }
-
-        }
-        cout << oss.str() << endl;
-        return;
+        this->processReceivedUserPacket(nShell, dev);
 
     } else {
-        return;
+        this->packetOss << "Dropping unknown packet";
     }
 
-    /*if (nShell->receiverId == this->authorId) {
-        // Checks what kind of log it is -> If it is not known, a new log will be recorded, since the packet is addressed to this switch
-        if (this->logExists(nShell)) {
-            this->concatenateEntry(nShell);
-            oss << "& concatenating entry " << to_string(nShell->shell->sequenceNum) << " in " << nShell->type << endl;
-        } else {
-            this->addLog(nShell);
-            oss << "& adding new log " << nShell->type << endl;
-            if (nShell->type.find("manager") != string::npos) {
-                this->manager = {nShell->shell->authorId, dev};
-                auto tmp = this->logs["switch" + to_string(this->authorId) + "/manager*"];
-                this->logs["switch" + to_string(this->authorId) + "/manager" + to_string(this->manager.first)] = tmp;
-                this->logs.erase("switch" + to_string(this->authorId) + "/manager*");
-                oss << "& assigning manager " << endl;
-            }
-        }
-    } else if (nShell->receiverId == 127 && nShell->type.find("switch*") != string::npos && nShell->type.find("user") != string::npos) {
-        this->addLog(nShell);
-        oss << "& adding new log " << nShell->type << endl;
-    } else if (nShell->type.find("/user") != string::npos) {
-        cout << "-------> " << nShell->type << endl;
-        cout << "-------> " << "switch" + to_string(this->authorId) + "/user" + nShell->shell->shell->params << endl;
-        if (this->hash(nShell->shell->shell->function) == GET_CONTENT_FROM) {
-            if (this->isNeighbour(this->convertStringToId(nShell->shell->shell->params))) {
-                cout << "he is here" << endl;
-                this->sendEntryFromIndexTo(this->logs["user" + nShell->shell->shell->params + "/user*"].second, this->getKeyByValue(dev), 0, "user" + nShell->shell->shell->params + "/user*");
-            } else {
-                nShell->shell->authorId = this->authorId;
-                this->logs.insert({"switch" + to_string(this->authorId) + "/user" + nShell->shell->shell->params, {this->convertStringToId(nShell->shell->shell->params), new CommunicationLog(this->authorId, nShell->shell)}});
-                this->forward(dev, nShell->shell, ++nShell->hops);
-                oss << "& and forwarding request";
-            }
-        }
-
-        else if (this->logs.find("switch" + to_string(this->authorId) + "/user" + nShell->shell->shell->params) != this->logs.end()) {
-            cout << "do <ou exist" << endl;
-            if (this->logExists(nShell)) {
-                this->concatenateEntry(nShell);
-                oss << "& concatenating entry " << to_string(nShell->shell->sequenceNum) << " in " << nShell->type << endl;
-            } else {
-                this->addLog(nShell);
-                oss << "&&&& adding new log " << nShell->type << endl;
-            }
-            this->forward(dev, nShell->shell, ++nShell->hops);
-        }
-        cout << oss.str() << endl;
-        return;
-    } else {
-        return;
-    }*/
-
-
-
-
-    auto lastEntry = this->logs[nShell->type].second->getLastEntry();
-        //Dropping packet if this switch is not the receiver
-    switch (this->hash(lastEntry.shell->function)) {
-        case ADD_MEMBER_TO_NETWORK:
-            this->addMemberToNetwork(lastEntry.shell->params);
-            break;
-        case PLUG_AND_PLAY:
-            this->sendPlugAndPlayConfirmation(dev, nShell->shell->authorId);
-            break;
-        case GET_CONTENT_FROM:
-            break;
-        default:
-            break;
-    }
-    oss << "----------------SwitchPacket_END----------------\n" << endl;
+    this->packetOss << "----------------SwitchPacket_END----------------\n" << endl;
     if (VERBOSE) {
-        cout << oss.str() << endl;
+        this->printPacketResult();
     }
-
+    this->packetOss.clear();
 }
 
 bool EthSwitch::isInList(vector<int8_t> v, int8_t authorId) {
@@ -318,9 +227,67 @@ bool EthSwitch::isInList(vector<int8_t> v, int8_t authorId) {
 }
 
 void EthSwitch::forward(Ptr<NetDevice> dev, NetShell* nShell, uint8_t hops) {
+    typedef multimap<string, int8_t>::iterator MMAPIterator;
+    auto p = SomeFunctions::varSplitter(nShell->type, "/");
+    pair<MMAPIterator, MMAPIterator> result = this->interestedNeighbours.equal_range(p.first);
+    for (MMAPIterator it = result.first; it != result.second; it++) {
+        dev = this->neighbourMap[it->second];
+        auto p = this->createPacket(nShell);
+        this->sendPacket(dev, p);
+    }
+}
+
+bool EthSwitch::processReceivedSwitchPacket(NetShell *nShell, Ptr <NetDevice> dev) {
+    // Check if receiver
+    if(this->logExists(nShell)) {
+        // Gossip answer
+        if (this->logs[nShell->type].second->getCurrentSeqNum() > nShell->shell->sequenceNum) {
+            this->sendEntryFromIndexTo(this->logs[nShell->type].second, this->getKeyByValue(dev),
+                                       nShell->shell->sequenceNum, nShell->type);
+            return false;
+        }
+    }
+    if (nShell->type.find("manager") != string::npos && nShell->receiverId == this->authorId) {
+        this->manager = {nShell->shell->authorId, dev};
+        this->packetOss << "& assigning manager " << endl;
+    }
+    return this->concatenateEntry(nShell);
+}
+
+void EthSwitch::processReceivedUserPacket(NetShell *nShell, Ptr <NetDevice> dev) {
+    if (this->hash(nShell->shell->shell->function) == GET_CONTENT_FROM) {
+        auto p = SomeFunctions::varSplitter(nShell->type, "/");
+
+        this->interestedNeighbours.insert({p.second, this->getKeyByValue(dev)});
+
+        // TODO: Changer hard coded condition
+        if (this->isNeighbour(this->convertStringToId(nShell->shell->shell->params)) || this->logs.find("user1/user*") != this->logs.end()) {
+            cout << "he is here" << endl;
+            cout << "user" + nShell->shell->shell->params + "/user*" << endl;
+            this->sendEntryFromIndexTo(this->logs["user" + nShell->shell->shell->params + "/user*"].second, this->getKeyByValue(dev), 0, "user" + nShell->shell->shell->params + "/user*");
+        } else {
+            nShell->type = "switch" + to_string(this->authorId) + "/user" + nShell->shell->shell->params;
+            this->logs.insert({nShell->type, {this->convertStringToId(nShell->shell->shell->params), new CommunicationLog(this->authorId, nShell->shell)}});
+            this->broadcastToNeighbours(dev, nShell);
+            this->packetOss << "& and forwarding request";
+        }
+
+
+    } else if (this->hash(nShell->shell->shell->function) == UPDATE_CONTENT_FROM) {
+        cout << "*******" << endl;
+        cout << "should be here" << endl;
+
+        // User pushes to the connected switch
+        if(this->concatenateEntry(nShell)) {
+            this->forward(dev, nShell, ++nShell->hops);
+        }
+    }
+}
+
+void EthSwitch::broadcastToNeighbours(Ptr <NetDevice> dev, NetShell *nShell) {
     for (auto entry : this->neighbourMap) {
         cout << "sending packets" << endl;
-        if (entry.second != dev && entry.second != this->manager.second) {
+        if (entry.second != dev && entry.first != this->manager.first) {
             auto p = this->createPacket(nShell);
             this->sendPacket(entry.second, p);
         }
