@@ -13,7 +13,6 @@ bool CommunicationLog::addToLog(LogShell shell) {
         this->log.push_back(shell);
         return true;
     }
-    cout << "i dont need that" << endl;
     return false;
 }
 
@@ -87,3 +86,10 @@ string CommunicationLog::createHash(LogShell entry) {
         i++;
     }
     return to_string(sum);}
+
+bool CommunicationLog::isSubsequentEntry(LogShell lShell) {
+    return ((this->log.empty() && lShell.sequenceNum == 0)
+    ||
+    (this->getCurrentSeqNum() + 1 == lShell.sequenceNum && this->createHash(this->getLastEntry()) == lShell.prevEventHash && this->owner == lShell.authorId)
+    );
+}
