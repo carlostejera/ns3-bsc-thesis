@@ -14,6 +14,12 @@ User::recvPkt(Ptr <NetDevice> dev, Ptr<const Packet> packet, uint16_t proto, con
     NetShell *nShell = SomeFunctions::shell(netShell);
     oss << "Received: " << netShell << endl;
     oss << "Result: ";
+    cout << "Received: " << netShell << endl;
+
+    if (this->isNeighbourToAdd(this->getKeyByValue(dev), nShell->hops)) {
+        this->addNeighbour(nShell->shell->authorId, dev);
+    }
+
 
     if (nShell->receiverId == this->authorId) {
         switch (this->hash(nShell->shell->shell->function)) {
@@ -21,23 +27,26 @@ User::recvPkt(Ptr <NetDevice> dev, Ptr<const Packet> packet, uint16_t proto, con
                 this->connectedSwitches.insert(make_pair(nShell->shell->authorId, dev));
                 break;
             default:
+                cout << "choking" << endl;
+                int8_t senderId;
+
+                if(nShell->type != "user" + to_string(this->authorId) + "/user*") {
+                    return;
+                }
+
+                for (auto entry : this->connectedSwitches) {
+                    if (entry.second == dev) {
+                        senderId = entry.first;
+                    }
+                }
+                cout << to_string(senderId) << endl;
+                this->sendEntryFromIndexTo(this->userLog, senderId, nShell->shell->sequenceNum, "user" +
+                        to_string(this->authorId) + "/user*");
                 break;
         }
     }
 
-    if (nShell->type == "diary") {
-        if (nShell->shell->shell->function == "addSwitch") {
-        }
-    } else if (nShell->type == "gotEntry") {
-        if (this->subscriptions.find(this->interested) == this->subscriptions.end() && this->interested != -1) {
-            auto log = new CommunicationLog(this->interested);
-            this->subscriptions.insert(make_pair(this->interested, log));
-            this->subscriptions[this->interested]->addToLog(*(nShell->shell));
-            this->interested = -1;
-        } else {
-            this->subscriptions[nShell->shell->authorId]->addToLog(*(nShell->shell));
-        }
-    }
+
 
     cout << oss.str() << endl;
 }
@@ -88,6 +97,12 @@ void User::printNetworkLog() {
     Printer stringAssembler;
 
     oss << "-------User " << to_string(this->authorId) << "-------" << endl;
+    oss << "My Log: " << endl;
+    for (auto lShell : this->userLog->getLog()) {
+        stringAssembler.visit(&lShell);
+        oss << stringAssembler.str() << endl;
+        stringAssembler.clearOss();
+    }
     oss << "Connected Switches: " << endl;
     for (auto item : this->connectedSwitches) {
         oss << to_string(item.first) << endl;
@@ -120,5 +135,14 @@ void User::pushLogToSwitch() {
         this->sendPacket(entry.second, p);
     }
 
+
+}
+
+bool User::processReceivedSwitchPacket(NetShell *netShell, Ptr <NetDevice> dev) {
+    return true;
+
+}
+
+void User::processReceivedUserPacket(NetShell *netShell, Ptr <NetDevice> dev) {
 
 }
