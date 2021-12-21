@@ -15,9 +15,11 @@ public:
     void sendNetworkJoinConfirmation(int8_t authorId);
     void sendAllLogEntriesTo(int8_t authorReceiverId);
     void broadcastLastNetworkChange(int8_t exceptedReceiver);
+    bool processReceivedSwitchPacket(NetShell* netShell, Ptr<NetDevice> dev) override;
+    void processReceivedUserPacket(NetShell* netShell, Ptr<NetDevice> dev) override;
 
 
-    Manager(int32_t id) : Application() {
+    Manager(int32_t id, double errorRate) : Application() {
         this->authorId = id;
         cout << "test"<< endl;
         this->logs.insert({"manager" + to_string(this->authorId) + "/switch*", {this->authorId, new CommunicationLog(this->authorId)}});

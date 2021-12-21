@@ -25,10 +25,13 @@ public:
     void plugAndPlay();
     void printNetworkLog() override;
     void pushLogToSwitch();
+    bool processReceivedSwitchPacket(NetShell* netShell, Ptr<NetDevice> dev) override;
+    void processReceivedUserPacket(NetShell* netShell, Ptr<NetDevice> dev) override;
 
 
 
-    User(int32_t id) : Application() {
+
+    User(int32_t id, double errorRate) : Application() {
         this->authorId = id;
         this->userLog = new CommunicationLog(this->authorId);
     }

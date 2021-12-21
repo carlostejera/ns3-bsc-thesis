@@ -13,6 +13,7 @@ struct EthSwitch : public Application, public NetworkDevice {
     vector<int8_t> connectedUser;
     map<int8_t, Ptr<NetDevice>> pit;
     map<int8_t, CommunicationLog*> logsOfUsers;
+    multimap<string, int8_t> interestedNeighbours;
 
     void recvPkt(Ptr<NetDevice> dev, Ptr<const Packet> packet, uint16_t proto, const Address& from, const Address& to, NetDevice::PacketType pt );
     void requestJoiningNetwork();
@@ -23,12 +24,20 @@ struct EthSwitch : public Application, public NetworkDevice {
     bool isInList(vector <int8_t> v, int8_t authorId);
     void forward(Ptr<NetDevice>, NetShell*, uint8_t hops);
     void gossip() override;
+    bool processReceivedSwitchPacket(NetShell* nShell, Ptr<NetDevice> dev) override;
+    void processReceivedUserPacket(NetShell* nShell, Ptr<NetDevice> dev) override;
+    void broadcastToNeighbours(Ptr<NetDevice> dev, NetShell* nShell);
 
 
 
-    EthSwitch(int8_t authorId) {
+    EthSwitch(int8_t authorId, double errorRate) {
         this->authorId = authorId;
         this->networkLog = new CommunicationLog(authorId);
+
+        this->rem = CreateObject<RateErrorModel>();
+        Ptr<UniformRandomVariable> uv = CreateObject<UniformRandomVariable>();
+        this->rem->SetRandomVariable(uv);
+        this->rem->SetRate(errorRate);
     }
     virtual ~EthSwitch() {}
     virtual void StartApplication(void) {
