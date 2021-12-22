@@ -2,6 +2,8 @@
 #define COMMUNICATION_LOG_ENTRY_H
 
 #include "shells/LogStructures.h"
+#include <openssl/sha.h>
+#include <iomanip>
 using namespace ns3;
 using namespace std;
 
@@ -40,10 +42,6 @@ class CommunicationLog {
     string getLogAsString();
     string createHash(LogShell shell);
     bool isSubsequentEntry(LogShell lShell);
-
-    
-
-
 };
 
 #endif

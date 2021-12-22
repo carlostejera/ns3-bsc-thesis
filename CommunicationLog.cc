@@ -76,16 +76,21 @@ string CommunicationLog::createHash(LogShell entry) {
     Printer p;
     p.visit(entry.shell);
     string content = p.str();
-    const char* contentAsChar = content.c_str();
-    p.clearOss();
 
-    int sum = 0;
-    int i = 0;
-    while (contentAsChar[i] != '\0') {
-        sum += contentAsChar[i];
-        i++;
+    SHA_CTX shactx;
+    uint8_t digest[SHA_DIGEST_LENGTH];
+
+    SHA1_Init(&shactx);
+    SHA1_Update(&shactx, content.c_str(), content.size());
+    SHA1_Final(digest, &shactx);
+    ostringstream oss;
+    for (int i = 0; i < SHA_DIGEST_LENGTH; i++) {
+        oss << hex << setw(2) << setfill('0') << (int)digest[i];
     }
-    return to_string(sum);}
+    cout << oss.str() << endl;
+
+    return oss.str();
+}
 
 bool CommunicationLog::isSubsequentEntry(LogShell lShell) {
     return ((this->log.empty() && lShell.sequenceNum == 0)
