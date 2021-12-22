@@ -27,7 +27,6 @@ protected:
     bool isMyNeighboursLogUpToDate(LogShell* lShell);
     bool isSubSequentSeqNum(LogShell* lShell);
     int8_t getKeyByValue(Ptr<NetDevice>);
-    string getPrevHash(CommunicationLog* log);
     int8_t convertStringToId(string);
     bool logExists(NetShell* nShell);
     void addLog(NetShell* nShell);

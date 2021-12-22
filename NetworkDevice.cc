@@ -120,23 +120,6 @@ int8_t NetworkDevice::getKeyByValue(Ptr<NetDevice> senderDev) {
     return -1;
 }
 
-string NetworkDevice::getPrevHash(CommunicationLog* log) {
-    Printer p;
-    p.visit(log->getLastEntry().shell);
-    string content = p.str();
-    const char* contentAsChar = content.c_str();
-    p.clearOss();
-
-    int sum = 0;
-    int i = 0;
-    while (contentAsChar[i] != '\0') {
-        sum += contentAsChar[i];
-        i++;
-    }
-
-    return to_string(sum);
-}
-
 int8_t NetworkDevice::convertStringToId(string id) {
     int authorId;
     stringstream ssAuthorId(id);

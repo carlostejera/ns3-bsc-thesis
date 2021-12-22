@@ -122,7 +122,7 @@ void User::printNetworkLog() {
 
 
 void User::pushLogToSwitch() {
-    this->userLog->addToLog(LogShell(this->count, this->userLog->getLog().empty() ? "" : this->getPrevHash(this->userLog), this->authorId, new ContentShell("pushContent", "", "This is my Computer log entry" +
+    this->userLog->addToLog(LogShell(this->count, this->userLog->getLog().empty() ? "" : this->userLog->createHash(this->userLog->getLastEntry()), this->authorId, new ContentShell("pushContent", "", "This is my Computer log entry" +
             to_string(this->count))));
     this->count += 1;
     LogShell lShell = this->userLog->getLastEntry();
