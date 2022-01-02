@@ -19,6 +19,7 @@ protected:
     vector<pair<string, CommunicationLog*>> communicationLogs;
     vector<pair<string, CommunicationLog*>> subscriptions;
     CommunicationLog* myPersonalLog;
+    string name;
 
 
     string readPacket(Ptr<const Packet> packet);
