@@ -38,6 +38,14 @@ static constexpr const char* ADD_MEMBER = "addMemberToNetwork";
 static constexpr const char* ASSIGN_MANAGER = "assignManager";
 static constexpr const char* GOSSIP = "gossip";
 
+static constexpr const char* SWITCH_PREFIX = "switch:";
+static constexpr const char* USER_PREFIX = "user:";
+static constexpr const char* MANAGER_PREFIX = "manager:";
+static constexpr const char* ALL_SUFFIX = "*";
+static constexpr const char* MANAGER_RECEIVER = *("/") + MANAGER_PREFIX;
+static constexpr const char* SWITCH_RECEIVER = *("/") + SWITCH_PREFIX;
+static constexpr const char* USER_RECEIVER = *("/") + USER_PREFIX;
+
 
 struct ExpressionVisitor {
     ostringstream oss;
@@ -77,14 +85,14 @@ struct ContentShell : public Shell {
 struct LogShell : public Shell {
     int8_t sequenceNum = 0;
     string prevEventHash;
-    int8_t authorId;
+    std::string authorId;
     string timestamp;
     ContentShell* shell;
 //    static long globalHash = 100000;
     long myHash; 
 
 
-    LogShell(int8_t seqNum, string prevHash, int8_t authorId, ContentShell* shell) :
+    LogShell(int8_t seqNum, string prevHash, std::string authorId, ContentShell* shell) :
             sequenceNum(seqNum),
             prevEventHash(prevHash),
             authorId(authorId),
@@ -102,12 +110,12 @@ struct LogShell : public Shell {
 
 struct NetShell : public Shell {
     ns3::Mac48Address macReceiver;
-    int8_t receiverId;
+    std::string receiverId;
     string type;
     LogShell* shell;
     uint8_t hops;
 
-    NetShell(ns3::Mac48Address mac, int8_t receiverId, string type, uint8_t hops, LogShell* shell){
+    NetShell(ns3::Mac48Address mac, std::string receiverId, string type, uint8_t hops, LogShell* shell){
         this->macReceiver = mac;
         this->receiverId = receiverId;
         this->type = type;
@@ -178,17 +186,14 @@ struct SomeFunctions {
 
         m = shellSplit(logShellParams, "|");
 
-        stringstream ssAuthor(m["author"]);
         stringstream ssSeq(m["seq"]);
         int seq;
-        int author_id;
-        ssAuthor >> author_id;
         ssSeq >> seq;
 
         LogShell *lShellNew = new LogShell(
                 seq,
                 m["prevHash"],
-                author_id,
+                m["author"],
                 cShellNew
         );
         auto netShellParams = nShellContent.erase(nShellContent.find(L_SHELL));
@@ -201,11 +206,11 @@ struct SomeFunctions {
         const char *bruh = receiverPair.first.c_str();
 
         stringstream ssId(receiverPair.second);
-        int receiverId;
-        ssId >> receiverId;
+//        int receiverId;
+//        ssId >> receiverId;
         auto resultShell = new NetShell(
                 ns3::Mac48Address(bruh),
-                receiverId,
+                receiverPair.second,
                 m["type"],
                 hops,
                 lShellNew

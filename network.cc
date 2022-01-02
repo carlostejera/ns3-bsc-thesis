@@ -21,7 +21,7 @@ void errorSettings(const double errorRate) {
 template <class T>
 void addApplicationToNodes(Ptr<T>* apps, NodeContainer nodes, uint32_t beginFrom, double errorRate) {
     for (uint32_t i = 0; i < nodes.GetN(); i++) {
-        apps[i] = Create<T>(i + beginFrom, errorRate);
+        apps[i] = Create<T>(to_string(i + beginFrom), errorRate);
         nodes.Get(i)->AddApplication(apps[i]);
     }
 }
@@ -125,10 +125,10 @@ void lineTopology(const uint32_t userNumbers, const uint32_t switchNumbers, cons
     for (uint32_t i = 0; i < user_nodes.GetN(); i++) {
         user_apps[i]->SetStartTime(Seconds(2));
     }
-    Simulator::Schedule(Seconds(3), &User::subscribe, user_apps[0], 1);
+    Simulator::Schedule(Seconds(3), &User::subscribe, user_apps[0], "user:1");
 
     for (int i = 0; i < 10; i++) {
-        Simulator::Schedule(Seconds(3), &User::pushLogToSwitch, user_apps[1]);
+        Simulator::Schedule(Seconds(5), &User::pushLogToSwitch, user_apps[1]);
     }
 
 
@@ -204,7 +204,7 @@ int main(int argc, char *argv[]) {
     Packet::EnableChecking();
 
     if (topology == "line") {
-        lineTopology(2, 5, 1, 0.001);
+        lineTopology(2, 2, 1, 0);
     } else if (topology == "p2p") {
         p2pTopology(0);
     }

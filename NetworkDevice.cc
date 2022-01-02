@@ -50,14 +50,14 @@ void NetworkDevice::sendPacket(Ptr<NetDevice> nDev, Ptr<Packet> p) {
  * @param authorId
  * @return
  */
-bool NetworkDevice::isFamilyMember(int8_t authorId) {
+bool NetworkDevice::isFamilyMember(std::string authorId) {
     return std::find(this->familyMembers.begin(), this->familyMembers.end(), authorId) != this->familyMembers.end();
 }
 
 void NetworkDevice::printNetworkLog() {
     Printer stringAssembler;
     ostringstream oss;
-    oss << "-----" << "Device ID: " << to_string(this->authorId) << "-----" << endl;
+    oss << "-----" << "Device ID: " << this->authorId << "-----" << endl;
     oss << "Communication logs:" << endl;
     for (auto log : this->communicationLogs) {
         oss << log.first << endl;
@@ -72,30 +72,35 @@ void NetworkDevice::printNetworkLog() {
     for (auto iter = this->neighbourMap.begin(); iter != this->neighbourMap.end(); iter++) {
         auto authorId = iter->first;
         auto nDev = iter->second;
-        oss << to_string(authorId) << ": " << ns3::Mac48Address::ConvertFrom(nDev->GetAddress()) << endl;
+        oss << authorId << ": " << ns3::Mac48Address::ConvertFrom(nDev->GetAddress()) << endl;
     }
     oss << "Family member:" << endl;
     for (auto member : this->familyMembers) {
-        oss << to_string(member) << endl;
+        oss << member << endl;
     }
-    oss << "------" << "LOG END " << to_string(this->authorId) << "------";
-    cout << "\033[1;" << to_string(20 + this->authorId) << "m" << oss.str() << "\033[0m\n";
+    oss << "------" << "LOG END " << this->authorId << "------";
+    cout << "\033[1;" << "33" << "m" << oss.str() << "\033[0m\n";
 }
 
-void NetworkDevice::sendEntryFromIndexTo(CommunicationLog* log, int8_t receiverId, int8_t seqFrom, string type) {
-    if (receiverId == -1) {
+void NetworkDevice::sendEntryFromIndexTo(CommunicationLog* log, std::string receiverId, int8_t seqFrom, string type) {
+    if (receiverId == "-1") {
         this->packetOss << "Not known neighbour. dropped" << endl;
         return;
     }
 
+    if (log == NULL) {
+        cout << "no log yet" << endl;
+        return;
+    }
     seqFrom = seqFrom == -1 ? 0 : seqFrom;
     auto receiverNetDevice = this->neighbourMap[receiverId];
     Printer p;
+    cout << "hihi" << endl;
     LogShell lShell = log->getLastEntry();
     LogShell* logShell_p = &lShell;
     p.visit(logShell_p);
     cout << "check" << endl;
-    cout << to_string(receiverId) << endl;
+    cout << receiverId << endl;
     auto receiverMac = ns3::Mac48Address::ConvertFrom(receiverNetDevice->GetAddress());
     cout << "mate" << endl;
     for (int i = seqFrom; i <= log->getCurrentSeqNum(); i++) {
@@ -106,7 +111,7 @@ void NetworkDevice::sendEntryFromIndexTo(CommunicationLog* log, int8_t receiverI
     }
 }
 
-int8_t NetworkDevice::getKeyByValue(Ptr<NetDevice> senderDev) {
+std::string NetworkDevice::getKeyByValue(Ptr<NetDevice> senderDev) {
     for (auto iter = this->neighbourMap.begin(); iter != this->neighbourMap.end(); iter++) {
         auto authorId = iter->first;
         auto nDev = iter->second;
@@ -115,7 +120,7 @@ int8_t NetworkDevice::getKeyByValue(Ptr<NetDevice> senderDev) {
         }
     }
     cout << "something went wrong" << endl;
-    return -1;
+    return "-1";
 }
 
 int8_t NetworkDevice::convertStringToId(string id) {
@@ -132,8 +137,8 @@ bool NetworkDevice::logExists(NetShell* nShell) {
 bool NetworkDevice::concatenateEntry(NetShell* nShell) {
     if (!this->logExists(nShell)) {
         // TODO: Maybe change
-        this->logs.insert({nShell->type, {nShell->shell->authorId, new CommunicationLog(nShell->shell->authorId, 108)}});
-        if (nShell->type.find("switch:") != string::npos && nShell->type.find("user:") != string::npos) {
+        this->logs.insert({nShell->type, {nShell->shell->authorId, new CommunicationLog(nShell->shell->authorId, "108")}});
+        if (nShell->type.find(SWITCH_PREFIX) != string::npos && nShell->type.find(USER_PREFIX) != string::npos) {
             this->communicationLogs.push_back({nShell->type,this->logs[nShell->type].second});
         } else {
             this->subscriptions.push_back({nShell->type, this->logs[nShell->type].second});
@@ -155,17 +160,17 @@ EnumFunctions NetworkDevice::hash(string input) {
     return NONE;
 }
 
-bool NetworkDevice::isNeighbourToAdd(const int8_t authorId, const uint8_t hops) {
+bool NetworkDevice::isNeighbourToAdd(const std::string authorId, const uint8_t hops) {
     return this->neighbourMap.find(authorId) == this->neighbourMap.end() && hops == 0;
 }
 
-bool NetworkDevice::isNeighbour(const int8_t authorId) {
+bool NetworkDevice::isNeighbour(const std::string authorId) {
     return this->neighbourMap.find(authorId) != this->neighbourMap.end();
 }
 
 
-void NetworkDevice::addNeighbour(int8_t authorId, Ptr <NetDevice> dev) {
-    this->packetOss << "Adding neighbour: " << to_string(authorId);
+void NetworkDevice::addNeighbour(std::string authorId, Ptr<NetDevice> dev) {
+    this->packetOss << "Adding neighbour: " << authorId;
     this->neighbourMap.insert(make_pair(authorId, dev));
 }
 

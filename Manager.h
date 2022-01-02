@@ -12,19 +12,18 @@ private:
     string myType;
 public:
     void recvPkt(Ptr<NetDevice> dev, Ptr<const Packet> packet, uint16_t proto, const Address& from, const Address& to, NetDevice::PacketType pt);
-    void registerUser(Ptr<NetDevice> dev, int8_t authorId);
-    void sendNetworkJoinConfirmation(int8_t authorId);
-    void broadcastLastNetworkChange(int8_t exceptedReceiver);
+    void registerUser(Ptr<NetDevice> dev, std::string authorId);
+    void sendNetworkJoinConfirmation(std::string authorId);
+    void broadcastLastNetworkChange(std::string exceptedReceiver);
     bool processReceivedSwitchPacket(NetShell* netShell, Ptr<NetDevice> dev) override;
     void processReceivedUserPacket(NetShell* netShell, Ptr<NetDevice> dev) override;
     bool concatenateEntry(NetShell* netShell);
     CommunicationLog* getLogFrom(string type);
 
 
-    Manager(int32_t id, double errorRate) : Application() {
-        this->authorId = id;
-        this->myType = "manager:" + to_string(this->authorId) + "/switch:*";
-        this->name = "manager:" + to_string(this->authorId);
+    Manager(std::string id, double errorRate) : Application() {
+        this->authorId = MANAGER_PREFIX + id;
+        this->myType = this->authorId + "/switch:*";
 
         this->myPersonalLog = new CommunicationLog(this->authorId);
         this->myPersonalLog->initialiseLog();

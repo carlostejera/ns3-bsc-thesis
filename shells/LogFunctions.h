@@ -13,7 +13,7 @@ void Printer::visit(ContentShell *cShell) {
 
 void Printer::visit(LogShell *lShell) {
     oss
-            << "lShell=(author=" << to_string(lShell->authorId)
+            << "lShell=(author=" << lShell->authorId
             << "|seq=" << to_string(lShell->sequenceNum)
             << "|prevHash=" << lShell->prevEventHash << "|";
     lShell->shell->accept(this);
@@ -24,7 +24,7 @@ void Printer::visit(LogShell *lShell) {
 
 void Printer::visit(NetShell *nShell) {
     oss
-    << "nShell=(receiver=" << nShell->macReceiver << "/" << to_string(nShell->receiverId)
+    << "nShell=(receiver=" << nShell->macReceiver << "/" << nShell->receiverId
     << "|type=" << nShell->type
     << "|hops=" <<  to_string(nShell->hops) << "|";
     nShell->shell->accept(this);

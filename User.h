@@ -16,7 +16,7 @@ private:
 public:
     void recvPkt(Ptr<NetDevice>, Ptr<const Packet>, uint16_t proto, const Address& from, const Address& to, NetDevice::PacketType pt);
     void joinNetwork();
-    void subscribe(int8_t authorId);
+    void subscribe(std::string authorId);
     void plugAndPlay();
     void printNetworkLog() override;
     void pushLogToSwitch();
@@ -26,10 +26,9 @@ public:
 
 
 
-    User(int32_t id, double errorRate) : Application() {
-        this->authorId = id;
+    User(std::string id, double errorRate) : Application() {
+        this->authorId = USER_PREFIX + id;
         this->myPersonalLog = new CommunicationLog(this->authorId);
-        this->name = "user:" + to_string(this->authorId);
     }
     virtual ~User() {}
 

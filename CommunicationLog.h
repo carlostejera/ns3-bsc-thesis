@@ -15,17 +15,17 @@ using namespace std;
 
 class CommunicationLog {
     private:
-    int8_t owner;
+    std::string owner;
     vector<LogShell> log;
-    int8_t dedicated;
+    std::string dedicated;
   public:
 
-    CommunicationLog(int8_t owner) {
+    CommunicationLog(std::string owner) {
         this->owner = owner;
         this->dedicated = owner;
     }
 
-    CommunicationLog(int8_t owner, int8_t dedicated) {
+    CommunicationLog(std::string owner, std::string dedicated) {
         this->owner = owner;
         this->dedicated = dedicated;
     }
@@ -41,8 +41,8 @@ class CommunicationLog {
     string getLogAsString();
     string createHash(LogShell shell);
     bool isSubsequentEntry(LogShell lShell);
-    const int8_t& getDedicated() const;
-    const int8_t &getOwner() const;
+    const std::string & getDedicated() const;
+    const std::string & getOwner() const;
 };
 
 #endif

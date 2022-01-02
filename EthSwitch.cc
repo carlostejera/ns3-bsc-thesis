@@ -10,15 +10,15 @@ using namespace std;
  */
 
 void EthSwitch::requestJoiningNetwork() {
-    CommunicationLog* log = new CommunicationLog(this->authorId, 127);
+    CommunicationLog* log = new CommunicationLog(this->authorId, "127");
 
-    ContentShell *cShell = new ContentShell("addToNetwork",to_string(this->authorId),to_string(this->authorId) + " wants to join the network");
+    ContentShell *cShell = new ContentShell("addToNetwork",this->authorId,this->authorId + " wants to join the network");
     LogShell *logShell = new LogShell(0,"",this->authorId,cShell);
 
-    string commLog = "switch:" + to_string(this->authorId) + "/manager:*";
-    NetShell *nShell = new NetShell(ns3::Mac48Address("FF:FF:FF:FF:FF:FF"),127,commLog,0,logShell);
+    string commLog = this->authorId + "/manager:*";
+    NetShell *nShell = new NetShell(ns3::Mac48Address("FF:FF:FF:FF:FF:FF"),"127",commLog,0,logShell);
     log->addToLog(*logShell);
-    this->logs.insert({commLog, {127, log}});
+    this->logs.insert({commLog, {"127", log}});
     this->communicationLogs.push_back({commLog, log});
     // Broadcast that the user wants to join the network (simulating via uni-cast)
     for (uint32_t i = 0; i < GetNode()->GetNDevices(); ++i) {
@@ -31,16 +31,14 @@ void EthSwitch::requestJoiningNetwork() {
 }
 
 
-void EthSwitch::assignManager(Ptr<NetDevice> sender, int8_t managerId) {
-    this->manager = {managerId, sender};
+void EthSwitch::assignManager(Ptr<NetDevice> dev, std::string manager) {
+    this->manager = {manager, dev};
     this->packetOss << "& assigning manager " << endl;
     this->isManagerAssigned = true;
 }
 
 void EthSwitch::addMemberToNetwork(string params) {
-    int authorId;
-    stringstream ssAuthorId(params);
-    ssAuthorId >> authorId;
+    std::string  authorId = params;
     this->familyMembers.push_back(authorId);
 }
 
@@ -48,10 +46,10 @@ void EthSwitch::printNetworkLog() {
     NetworkDevice::printNetworkLog();
     ostringstream oss;
     Printer stringAssembler;
-    oss << "Manager: " << to_string(this->manager.first) << endl;
+    oss << "Manager: " << this->manager.first << endl;
     oss << "Connected users: " << endl;
     for (auto user : this->connectedUser) {
-        oss << to_string(user) << " " << endl;
+        oss << user << " " << endl;
     }
     if (this->connectedUser.empty())
         oss << "None" << endl;
@@ -61,39 +59,39 @@ void EthSwitch::printNetworkLog() {
 
 /**
  * Answering the user about its connection to the switch
- * @param nDev
- * @param connectingUser
+ * @param dev
+ * @param authorId
  */
-void EthSwitch::sendPlugAndPlayConfirmation(Ptr<NetDevice> nDev, int8_t connectingUser) {
+void EthSwitch::sendPlugAndPlayConfirmation(Ptr<NetDevice> dev, std::string authorId) {
     LogShell* log = new LogShell(
             0,
             "",
             this->authorId,
             new ContentShell(
                     "addSwitch",
-                    to_string(this->authorId),
+                    this->authorId,
                     "Add switch to the connected list"
             ));
 
-    string logName = "switch:" + to_string(this->authorId) + "/user:" + to_string(connectingUser);
-    CommunicationLog* cLog = new CommunicationLog(this->authorId, connectingUser);
+    string logName = this->authorId + "/" + authorId;
+    CommunicationLog* cLog = new CommunicationLog(this->authorId, authorId);
     cLog->addToLog(*log);
 
-    this->logs.insert({logName, {connectingUser, cLog}});
+    this->logs.insert({logName, {authorId, cLog}});
     LogShell tmp = this->logs[logName].second->getLastEntry();
 
-    this->connectedUser.push_back(connectingUser);
+    this->connectedUser.push_back(authorId);
 
     Ptr<Packet> p = this->createPacket(
             new NetShell(
-                ns3::Mac48Address::ConvertFrom(nDev->GetAddress()),
-                connectingUser,
+                ns3::Mac48Address::ConvertFrom(dev->GetAddress()),
+                authorId,
                 logName,
                 0,
                 &(tmp)
                     )
     );
-    this->sendPacket(nDev, p);
+    this->sendPacket(dev, p);
 }
 
 void EthSwitch::gossip() {
@@ -161,7 +159,7 @@ void EthSwitch::recvPkt(
     }
 
     this->packetOss << "------------------SwitchPacket-------------------" << endl
-        << "i am " << to_string(this->authorId) << endl;
+        << "i am " << this->authorId << endl;
 
 
     this->packetOss << "Received: " << netShell << endl;
@@ -183,8 +181,7 @@ void EthSwitch::recvPkt(
                 case ADD_MEMBER_TO_NETWORK:
                     this->addMemberToNetwork(lastEntry.shell->params);
                     break;
-                case PLUG_AND_PLAY:
-                    this->sendPlugAndPlayConfirmation(dev, nShell->shell->authorId);
+                case PLUG_AND_PLAY:this->sendPlugAndPlayConfirmation(dev, nShell->shell->authorId);
                     break;
                 case GET_CONTENT_FROM:
                     break;
@@ -208,7 +205,7 @@ void EthSwitch::recvPkt(
 }
 
 void EthSwitch::forward(Ptr<NetDevice> dev, NetShell* nShell, uint8_t hops) {
-    typedef multimap<string, int8_t>::iterator MMAPIterator;
+    typedef multimap<string, std::string>::iterator MMAPIterator;
     auto p = SomeFunctions::varSplitter(nShell->type, "/");
     pair<MMAPIterator, MMAPIterator> result = this->interestedNeighbours.equal_range(p.first);
     for (MMAPIterator it = result.first; it != result.second; it++) {
@@ -241,16 +238,19 @@ void EthSwitch::processReceivedUserPacket(NetShell *nShell, Ptr <NetDevice> dev)
 
         this->interestedNeighbours.insert({p.second, this->getKeyByValue(dev)});
         // TODO: Changer hard coded condition
-        if (this->isNeighbour(this->convertStringToId(nShell->shell->shell->params)) || this->logs.find("user1/user*") != this->logs.end()) {
+        if (this->isNeighbour(nShell->shell->shell->params) || this->logs.find("user:1/user:*") != this->logs.end()) {
             cout << "he is here" << endl;
-            auto toSubscribe = "user:" + nShell->shell->shell->params + "/user:*";
+            auto toSubscribe = nShell->shell->shell->params + "/user:*";
+            cout << nShell->shell->shell->params << endl;
+            cout << "i am " << this->authorId << endl;
+            cout << toSubscribe << endl;
             this->sendEntryFromIndexTo(this->getLogFrom(toSubscribe), this->getKeyByValue(dev), 0, toSubscribe);
         } else {
             // Somebody is interested in a log, so am I
-            nShell->type = "switch:" + to_string(this->authorId) + "/user:" + nShell->shell->shell->params;
-            auto cLog = new CommunicationLog(this->authorId, this->convertStringToId(nShell->shell->shell->params));
+            nShell->type = this->authorId + "/" + nShell->shell->shell->params;
+            auto cLog = new CommunicationLog(this->authorId, nShell->shell->shell->params);
             cLog->addToLog(*nShell->shell);
-            this->logs.insert({nShell->type, {this->convertStringToId(nShell->shell->shell->params), cLog}});
+            this->logs.insert({nShell->type, {nShell->shell->shell->params, cLog}});
             this->broadcastToNeighbours(dev, nShell);
             this->packetOss << "& and forwarding request";
         }

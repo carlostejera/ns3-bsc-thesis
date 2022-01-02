@@ -27,7 +27,7 @@ void CommunicationLog::initialiseLog() {
 }
 
 LogShell CommunicationLog::getLastEntry() {
-    cout << to_string(this->owner) << " " << to_string(this->dedicated) << endl;
+    cout << this->owner << " " << this->dedicated << endl;
     return this->log.back();
 }
 
@@ -84,9 +84,9 @@ bool CommunicationLog::isSubsequentEntry(LogShell lShell) {
     (this->getCurrentSeqNum() + 1 == lShell.sequenceNum && this->createHash(this->getLastEntry()) == lShell.prevEventHash && this->owner == lShell.authorId)
     );
 }
-const int8_t& CommunicationLog::getDedicated() const {
+const std::string & CommunicationLog::getDedicated() const {
     return this->dedicated;
 }
-const int8_t &CommunicationLog::getOwner() const {
+const std::string & CommunicationLog::getOwner() const {
     return this->owner;
 }

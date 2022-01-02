@@ -3,6 +3,7 @@
 
 #include "shells/LogStructures.h"
 #include "CommunicationLog.h"
+#include "../../build/ns3/ptr.h"
 
 using namespace ns3;
 using namespace std;
@@ -12,10 +13,10 @@ class NetworkDevice {
 protected:
     // Attributes
     ostringstream packetOss;
-    vector<int8_t> familyMembers;
-    std::map<int8_t, Ptr<NetDevice>> neighbourMap;
-    int8_t authorId;
-    map<string, pair<int8_t , CommunicationLog*>> logs;
+    vector<std::string> familyMembers;
+    std::map<std::string, Ptr<NetDevice>> neighbourMap;
+    std::string authorId;
+    map<string, pair<std::string , CommunicationLog*>> logs;
     vector<pair<string, CommunicationLog*>> communicationLogs;
     vector<pair<string, CommunicationLog*>> subscriptions;
     CommunicationLog* myPersonalLog;
@@ -25,21 +26,22 @@ protected:
     string readPacket(Ptr<const Packet> packet);
     Ptr<Packet> createPacket(NetShell* nShell);
     void sendPacket(Ptr<NetDevice> nDev, Ptr<Packet> p);
-    bool isFamilyMember(int8_t authorId);
-    void sendEntryFromIndexTo(CommunicationLog* log, int8_t receiverId, int8_t seqFrom, string type);
-    int8_t getKeyByValue(Ptr<NetDevice>);
+    bool isFamilyMember(std::string authorId);
+    void sendEntryFromIndexTo(CommunicationLog* log, std::string receiverId, int8_t seqFrom, string type);
+    std::string getKeyByValue(Ptr <NetDevice> senderDev);
     int8_t convertStringToId(string);
     bool logExists(NetShell* nShell);
     virtual bool concatenateEntry(NetShell* nShell);
     EnumFunctions hash(string input);
-    bool isNeighbourToAdd(const int8_t authorId, const uint8_t hops);
-    bool isNeighbour(const int8_t authorId);
-    void addNeighbour(int8_t, Ptr<NetDevice>);
+    bool isNeighbourToAdd(const std::string authorId, const uint8_t hops);
+    bool isNeighbour(const std::string authorId);
+    void addNeighbour(std::string authorId, Ptr<NetDevice> dev);
     virtual bool processReceivedSwitchPacket(NetShell* netShell, Ptr<NetDevice> dev) = 0;
     virtual void processReceivedUserPacket(NetShell* netShell, Ptr<NetDevice> dev) = 0;
     void printPacketResult();
     bool isGossipEntryOlder(NetShell* nShell);
     bool isEntryConcatenated(NetShell* netShell);
+//    std::string type(std::string)
 
 //    bool isSubsequentContent();
 
