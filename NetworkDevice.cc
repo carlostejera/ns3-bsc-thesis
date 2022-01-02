@@ -1,5 +1,10 @@
 #include "NetworkDevice.h"
 
+/**
+ * Deserializes the packet to a string
+ * @param packet packet to read
+ * @return
+ */
 string NetworkDevice::readPacket(Ptr<const Packet> packet) {
     uint32_t pktSize = packet->GetSize();
     uint8_t buf[pktSize];
@@ -19,6 +24,13 @@ void NetworkDevice::gossip() {
     }
 }
 
+
+/**
+ * Converts the given net shell to a string and then it gets converted into a char sequence to finally create the
+ * NS3 packet
+ * @param nShell net shell to send
+ * @return
+ */
 Ptr <Packet> NetworkDevice::createPacket(NetShell *nShell) {
     Printer stringAssembler;
 
@@ -27,14 +39,15 @@ Ptr <Packet> NetworkDevice::createPacket(NetShell *nShell) {
     stringAssembler.clearOss();
     uint8_t* text = (uint8_t*) netShellString.c_str();
     auto p = Create<Packet>(text, strlen((char *) text));
-//    MyHeader sourceHeader;
-//    sourceHeader.SetData(2);
-//    p->AddHeader(sourceHeader);
 
-    p->Print(cout);
     return p;
 }
 
+/**
+ * Sends packet to the given receiver (Net Device)
+ * @param nDev receiver
+ * @param p packet to send
+ */
 void NetworkDevice::sendPacket(Ptr<NetDevice> nDev, Ptr<Packet> p) {
     auto destinationMac = ns3::Mac48Address::ConvertFrom(nDev->GetAddress());
     if (!nDev->Send(p, destinationMac, 0x800)) {
@@ -42,6 +55,11 @@ void NetworkDevice::sendPacket(Ptr<NetDevice> nDev, Ptr<Packet> p) {
     }
 }
 
+/**
+ * Checks if the given author ID is part of the network
+ * @param authorId
+ * @return
+ */
 bool NetworkDevice::isFamilyMember(int8_t authorId) {
     return std::find(this->familyMembers.begin(), this->familyMembers.end(), authorId) != this->familyMembers.end();
 }
@@ -50,11 +68,17 @@ void NetworkDevice::printNetworkLog() {
     Printer stringAssembler;
     ostringstream oss;
     oss << "-----" << "Device ID: " << to_string(this->authorId) << "-----" << endl;
-    for (auto entry : this->logs) {
-        oss << entry.first << ":" <<endl;
-        oss << entry.second.second->getLogAsString() << endl;
+    oss << "Communication logs:" << endl;
+    for (auto log : this->communicationLogs) {
+        oss << log.first << endl;
+        oss << log.second->getLogAsString() << endl;
     }
-    oss  << "Neighbours: " << endl;
+    oss << "Subscriptions:" << endl;
+    for (auto log : this->subscriptions) {
+        oss << log.first << endl;
+        oss << log.second->getLogAsString() << endl;
+    }
+    oss << endl << "Neighbours: " << endl;
     for (auto iter = this->neighbourMap.begin(); iter != this->neighbourMap.end(); iter++) {
         auto authorId = iter->first;
         auto nDev = iter->second;
@@ -65,7 +89,7 @@ void NetworkDevice::printNetworkLog() {
         oss << to_string(member) << endl;
     }
     oss << "------" << "LOG END " << to_string(this->authorId) << "------";
-    cout << oss.str() << endl;
+    cout << "\033[1;" << to_string(20 + this->authorId) << "m" << oss.str() << "\033[0m\n";
 }
 
 void NetworkDevice::sendLastEntryTo(int8_t authorId, string type) {
@@ -82,24 +106,22 @@ void NetworkDevice::sendLastEntryTo(int8_t authorId, string type) {
     this->sendPacket(receiverNetDevice, p);
 }
 
-bool NetworkDevice::isSubSequentSeqNum(LogShell *lShell) {
-    return lShell->sequenceNum == this->networkLog->getCurrentSeqNum() + 1;
-}
-
-bool NetworkDevice::isMyNeighboursLogUpToDate(LogShell *lShell) {
-    return lShell->sequenceNum >= this->networkLog->getCurrentSeqNum();
-}
-
 void NetworkDevice::sendEntryFromIndexTo(CommunicationLog* log, int8_t receiverId, int8_t seqFrom, string type) {
+    if (receiverId == -1) {
+        this->packetOss << "Not known neighbour. dropped" << endl;
+        return;
+    }
 
     seqFrom = seqFrom == -1 ? 0 : seqFrom;
-
     auto receiverNetDevice = this->neighbourMap[receiverId];
     Printer p;
     LogShell lShell = log->getLastEntry();
     LogShell* logShell_p = &lShell;
     p.visit(logShell_p);
+    cout << "check" << endl;
+    cout << to_string(receiverId) << endl;
     auto receiverMac = ns3::Mac48Address::ConvertFrom(receiverNetDevice->GetAddress());
+    cout << "mate" << endl;
     for (int i = seqFrom; i <= log->getCurrentSeqNum(); i++) {
         auto lShell = log->getEntryAt(i);
         NetShell* nShell = new NetShell(receiverMac, receiverId, type, 0, &lShell);
@@ -131,24 +153,19 @@ bool NetworkDevice::logExists(NetShell* nShell) {
     return this->logs.find(nShell->type) != this->logs.end();
 }
 
-void NetworkDevice::addLog(NetShell* nShell) {
-    this->logs.insert({nShell->type, {nShell->shell->authorId, new CommunicationLog(nShell->shell->authorId)}});
-}
-
 bool NetworkDevice::concatenateEntry(NetShell* nShell) {
     if (!this->logExists(nShell)) {
-        this->logs.insert({nShell->type, {nShell->shell->authorId, new CommunicationLog(nShell->shell->authorId)}});
+        // TODO: Maybe change
+        this->logs.insert({nShell->type, {nShell->shell->authorId, new CommunicationLog(nShell->shell->authorId, 108)}});
+        if (nShell->type.find("switch:") != string::npos && nShell->type.find("user:") != string::npos) {
+            this->communicationLogs.push_back({nShell->type,this->logs[nShell->type].second});
+        } else {
+            this->subscriptions.push_back({nShell->type, this->logs[nShell->type].second});
+        }
+        cout << "xdddddddddddddddddddd" << endl;
     }
 
-    CommunicationLog* l = this->logs[nShell->type].second;
-    if (l->isSubsequentEntry(*(nShell->shell))) {
-        this->packetOss << "& concatenating entry " << to_string(nShell->shell->sequenceNum) << " to " << nShell->type << endl;
-        l->addToLog(*(nShell->shell));
-        return true;
-    } else {
-        this->packetOss << "& dropping packet, not matching subsequent entry" << endl;
-        return false;
-    }
+    return this->isEntryConcatenated(nShell);
 }
 
 EnumFunctions NetworkDevice::hash(string input) {
@@ -180,5 +197,16 @@ void NetworkDevice::printPacketResult() {
     cout << this->packetOss.str() << endl;
     this->packetOss.str("");
 
+}
+bool NetworkDevice::isGossipEntryOlder(NetShell *nShell) {
+    return this->logs[nShell->type].second->getCurrentSeqNum() > nShell->shell->sequenceNum;
+}
+bool NetworkDevice::isEntryConcatenated(NetShell* netShell) {
+    CommunicationLog* l = this->logs[netShell->type].second;
+    string conc = "& concatenating entry " + to_string(netShell->shell->sequenceNum) + " to " + netShell->type + "\n";
+    string drop = "& dropping packet, not matching subsequent entry\n";
+    bool result = l->addToLog(*(netShell->shell));
+    this->packetOss << (result ? conc : drop);
+    return result;
 }
 
