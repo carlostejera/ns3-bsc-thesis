@@ -16,13 +16,8 @@ using namespace std;
 class CommunicationLog {
     private:
     int8_t owner;
-  public:
-    const int8_t &getOwner() const;
-  private:
     vector<LogShell> log;
     int8_t dedicated;
-  public:
-
   public:
 
     CommunicationLog(int8_t owner) {
@@ -33,11 +28,6 @@ class CommunicationLog {
     CommunicationLog(int8_t owner, int8_t dedicated) {
         this->owner = owner;
         this->dedicated = dedicated;
-    }
-
-    CommunicationLog(int8_t owner, LogShell* logShell) {
-        this->owner = owner;
-        this->addToLog(*logShell);
     }
     virtual ~CommunicationLog() {}
 
@@ -52,7 +42,7 @@ class CommunicationLog {
     string createHash(LogShell shell);
     bool isSubsequentEntry(LogShell lShell);
     const int8_t& getDedicated() const;
-
+    const int8_t &getOwner() const;
 };
 
 #endif
