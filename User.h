@@ -11,11 +11,6 @@ using namespace std;
 class User : public Application, public NetworkDevice {
 
 private:
-    std::map<int8_t, Ptr<NetDevice>> connectedSwitches;
-    int8_t authorId;
-    CommunicationLog* userLog;
-    map<uint8_t, CommunicationLog*> subscriptions;
-    int8_t interested;
     int count = 0;
 
 public:
@@ -33,7 +28,7 @@ public:
 
     User(int32_t id, double errorRate) : Application() {
         this->authorId = id;
-        this->userLog = new CommunicationLog(this->authorId);
+        this->myPersonalLog = new CommunicationLog(this->authorId);
         this->name = "user:" + to_string(this->authorId);
     }
     virtual ~User() {}

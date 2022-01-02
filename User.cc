@@ -24,7 +24,7 @@ User::recvPkt(Ptr <NetDevice> dev, Ptr<const Packet> packet, uint16_t proto, con
     if (nShell->receiverId == this->authorId) {
         switch (this->hash(nShell->shell->shell->function)) {
             case ADD_SWITCH:
-                this->connectedSwitches.insert(make_pair(nShell->shell->authorId, dev));
+                this->neighbourMap.insert(make_pair(nShell->shell->authorId, dev));
                 break;
             default:
                 cout << "choking" << endl;
@@ -34,13 +34,13 @@ User::recvPkt(Ptr <NetDevice> dev, Ptr<const Packet> packet, uint16_t proto, con
                     return;
                 }
 
-                for (auto entry : this->connectedSwitches) {
+                for (auto entry : this->neighbourMap) {
                     if (entry.second == dev) {
                         senderId = entry.first;
                     }
                 }
                 cout << to_string(senderId) << endl;
-                this->sendEntryFromIndexTo(this->userLog, senderId, nShell->shell->sequenceNum, "user" +
+                this->sendEntryFromIndexTo(this->myPersonalLog, senderId, nShell->shell->sequenceNum, "user" +
                         to_string(this->authorId) + "/user*");
                 break;
         }
@@ -54,7 +54,7 @@ User::recvPkt(Ptr <NetDevice> dev, Ptr<const Packet> packet, uint16_t proto, con
 void User::joinNetwork() {}
 
 void User::subscribe(int8_t authorId) {
-    for (auto item : this->connectedSwitches) {
+    for (auto item : this->neighbourMap) {
         auto mac = ns3::Mac48Address::ConvertFrom(item.second->GetAddress());
 
         auto cShell = new ContentShell("getContentFrom", to_string(authorId),
@@ -65,7 +65,6 @@ void User::subscribe(int8_t authorId) {
         auto p = this->createPacket(nShell);
         this->sendPacket(item.second, p);
     }
-    this->interested = authorId;
     cout << "I am subscribing" << endl;
 }
 
@@ -99,13 +98,13 @@ void User::printNetworkLog() {
 
     oss << "-------User " << to_string(this->authorId) << "-------" << endl;
     oss << "My Log: " << endl;
-    for (auto lShell : this->userLog->getLog()) {
+    for (auto lShell : this->myPersonalLog->getLog()) {
         stringAssembler.visit(&lShell);
         oss << stringAssembler.str() << endl;
         stringAssembler.clearOss();
     }
     oss << "Connected Switches: " << endl;
-    for (auto item : this->connectedSwitches) {
+    for (auto item : this->neighbourMap) {
         oss << to_string(item.first) << endl;
     }
     oss << "Logs:" << endl;
@@ -123,13 +122,13 @@ void User::printNetworkLog() {
 
 
 void User::pushLogToSwitch() {
-    this->userLog->addToLog(LogShell(this->count, this->userLog->getLog().empty() ? "" : this->userLog->createHash(this->userLog->getLastEntry()), this->authorId, new ContentShell("pushContent", "", "This is my Computer log entry" +
+    this->myPersonalLog->addToLog(LogShell(this->count, this->myPersonalLog->getLog().empty() ? "" : this->myPersonalLog->createHash(this->myPersonalLog->getLastEntry()), this->authorId, new ContentShell("pushContent", "", "This is my Computer log entry" +
             to_string(this->count))));
     this->count += 1;
-    LogShell lShell = this->userLog->getLastEntry();
+    LogShell lShell = this->myPersonalLog->getLastEntry();
     LogShell *shell_p = &lShell;
 
-    for (auto entry: this->connectedSwitches) {
+    for (auto entry: this->neighbourMap) {
         NetShell *netShell = new NetShell(ns3::Mac48Address::ConvertFrom(entry.second->GetAddress()), entry.first,
                                           "user:" + to_string(this->authorId) + "/user:*", 0, shell_p);
         auto p = this->createPacket(netShell);

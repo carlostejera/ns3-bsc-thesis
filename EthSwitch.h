@@ -20,7 +20,6 @@ struct EthSwitch : public Application, public NetworkDevice {
     void forward(Ptr<NetDevice>, NetShell*, uint8_t hops);
     CommunicationLog* getLogFrom(string type);
     void gossip();
-    bool isInList(vector <int8_t> v, int8_t authorId);
     void printNetworkLog() override;
     bool processReceivedSwitchPacket(NetShell* nShell, Ptr<NetDevice> dev) override;
     void processReceivedUserPacket(NetShell* nShell, Ptr<NetDevice> dev) override;

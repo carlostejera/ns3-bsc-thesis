@@ -207,10 +207,6 @@ void EthSwitch::recvPkt(
     this->packetOss.clear();
 }
 
-bool EthSwitch::isInList(vector<int8_t> v, int8_t authorId) {
-    return find(v.begin(), v.end(), authorId) != v.end();
-}
-
 void EthSwitch::forward(Ptr<NetDevice> dev, NetShell* nShell, uint8_t hops) {
     typedef multimap<string, int8_t>::iterator MMAPIterator;
     auto p = SomeFunctions::varSplitter(nShell->type, "/");
