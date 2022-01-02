@@ -34,6 +34,7 @@ public:
     User(int32_t id, double errorRate) : Application() {
         this->authorId = id;
         this->userLog = new CommunicationLog(this->authorId);
+        this->name = "user:" + to_string(this->authorId);
     }
     virtual ~User() {}
 
