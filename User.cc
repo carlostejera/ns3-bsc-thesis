@@ -95,7 +95,7 @@ void User::plugAndPlay() {
 void User::printNetworkLog() {
     ostringstream oss;
     Printer stringAssembler;
-
+/*
     oss << "-------User " << to_string(this->authorId) << "-------" << endl;
     oss << "My Log: " << endl;
     for (auto lShell : this->myPersonalLog->getLog()) {
@@ -109,14 +109,14 @@ void User::printNetworkLog() {
     }
     oss << "Logs:" << endl;
     for (auto item: this->subscriptions) {
-        oss << "Log of " << to_string(item.first) << endl;
+        oss << "Log of " << item.first << endl;
         for (auto lShell: this->subscriptions[item.first]->getLog()) {
             stringAssembler.visit(&lShell);
             oss << stringAssembler.str() << endl;
             stringAssembler.clearOss();
         }
     }
-    oss << "-----------------------" << endl;
+    oss << "-----------------------" << endl;*/
     cout << oss.str() << endl;
 }
 
