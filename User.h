@@ -44,6 +44,7 @@ public:
                     0x800,
                     GetNode()->GetDevice(i)); //Register Event Handler to all Devices
         }
+        this->plugAndPlay();
     }
 
 

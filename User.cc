@@ -60,8 +60,8 @@ void User::subscribe(int8_t authorId) {
         auto cShell = new ContentShell("getContentFrom", to_string(authorId),
                                        "Subscribe the author " + to_string(authorId));
         auto lShell = new LogShell(0, "", this->authorId, cShell);
-        this->logs.insert({"user" + to_string(this->authorId) + "/user" + to_string(authorId),{authorId, new CommunicationLog(this->authorId)}});
-        auto nShell = new NetShell(mac, 1, "user" + to_string(this->authorId) + "/user" + to_string(authorId), 0, lShell);
+        this->logs.insert({"user" + to_string(this->authorId) + "/user" + to_string(authorId),{authorId, new CommunicationLog(this->authorId, authorId)}});
+        auto nShell = new NetShell(mac, 1, "user:" + to_string(this->authorId) + "/user:" + to_string(authorId), 0, lShell);
         auto p = this->createPacket(nShell);
         this->sendPacket(item.second, p);
     }
@@ -75,13 +75,14 @@ void User::plugAndPlay() {
                                             to_string(this->authorId) + " plug and play"
     );
     LogShell *logShell = new LogShell(0, "", this->authorId, cShell);
+    string logName = "user:" + to_string(this->authorId) + "/switch:*";
     NetShell *nShell = new NetShell(
             ns3::Mac48Address("FF:FF:FF:FF:FF:FF"),
             127,
-            "user" + to_string(this->authorId) + "/switch*",
+            logName,
             0,
             logShell);
-    this->logs.insert({"user" + to_string(this->authorId) + "/switch*", {127, new CommunicationLog(this->authorId)}});
+    this->logs.insert({logName, {127, new CommunicationLog(this->authorId)}});
     for (uint32_t i = 0; i < GetNode()->GetNDevices(); ++i) {
         Ptr <Packet> p = this->createPacket(nShell);
         Ptr <NetDevice> dev = GetNode()->GetDevice(i);
@@ -130,11 +131,10 @@ void User::pushLogToSwitch() {
 
     for (auto entry: this->connectedSwitches) {
         NetShell *netShell = new NetShell(ns3::Mac48Address::ConvertFrom(entry.second->GetAddress()), entry.first,
-                                          "user" + to_string(this->authorId) + "/user*", 0, shell_p);
+                                          "user:" + to_string(this->authorId) + "/user:*", 0, shell_p);
         auto p = this->createPacket(netShell);
         this->sendPacket(entry.second, p);
     }
-
 
 }
 
