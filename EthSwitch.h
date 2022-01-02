@@ -30,6 +30,7 @@ struct EthSwitch : public Application, public NetworkDevice {
 
     EthSwitch(int8_t authorId, double errorRate) {
         this->authorId = authorId;
+        this->name = "switch:" + to_string(this->authorId);
     }
     virtual ~EthSwitch() {}
     virtual void StartApplication(void) {

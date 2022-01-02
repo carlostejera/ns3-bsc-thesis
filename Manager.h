@@ -24,6 +24,7 @@ public:
     Manager(int32_t id, double errorRate) : Application() {
         this->authorId = id;
         this->myType = "manager:" + to_string(this->authorId) + "/switch:*";
+        this->name = "manager:" + to_string(this->authorId);
 
         this->myPersonalLog = new CommunicationLog(this->authorId);
         this->myPersonalLog->initialiseLog();
