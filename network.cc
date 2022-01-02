@@ -2,7 +2,6 @@
 #include "User.h"
 #include "EthSwitch.h"
 #include "Manager.h"
-#include "GlobalsValues.h"
 
 using namespace ns3;
 using namespace std;
