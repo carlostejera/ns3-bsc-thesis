@@ -35,7 +35,7 @@ void Manager::sendAllLogEntriesTo(int8_t authorReceiverId) {
     cout << "Sending " << to_string(this->networkLog->getLogsSize()) << " entries to " << to_string(authorReceiverId) << endl;
     for (int i = 0; i < this->networkLog->getLogsSize(); i++) {
         auto log = this->networkLog->getEntryAt(i);
-        nShell = new NetShell(receiverMac, authorReceiverId, "manager" + to_string(this->authorId) + "/switch*", 0, &log);
+        nShell = new NetShell(receiverMac, authorReceiverId, "manager:" + to_string(this->authorId) + "/switch:*", 0, &log);
         p = this->createPacket(nShell);
         this->sendPacket(receiverNetDevice, p);
     }
@@ -51,9 +51,22 @@ void Manager::broadcastLastNetworkChange(int8_t exceptedReceiver =-1) {
             continue;
 
         if (authorId != exceptedReceiver) {
-            this->sendLastEntryTo(authorId, "manager" + to_string(this->authorId) + "/switch*");
+            this->sendLastEntryTo(authorId, "manager:" + to_string(this->authorId) + "/switch:*");
         }
     }
+}
+
+bool Manager::concatenateEntry(NetShell* netShell) {
+    if (!this->logExists(netShell)) {
+        // TODO: Maybe change
+        this->communicationLogs.push_back({netShell->type, new CommunicationLog(netShell->shell->authorId, this->authorId)});
+    }
+    CommunicationLog* log = this->getLogFrom(netShell->type);
+    string conc = "& concatenating entry " + to_string(netShell->shell->sequenceNum) + " to " + netShell->type + "\n";
+    string drop = "& dropping packet, not matching subsequent entry\n";
+    bool result = log->addToLog(*(netShell->shell));
+    this->packetOss << (result ? conc : drop);
+    return result;
 }
 
 
@@ -66,47 +79,48 @@ void Manager::recvPkt(
         const Address& to,
         NetDevice::PacketType pt ) {
 
-    ostringstream oss;
-    oss << "------------------ManagerPacket-------------------" << endl
-        << "Manager: " << to_string(this->authorId) << endl
-        << packet << endl;
+    this->packetOss << "------------------ManagerPacket-------------------" << endl
+        << "Manager: " << to_string(this->authorId) << endl;
 
     string netShell = this->readPacket(packet);
-    oss << "Received: " << netShell << endl;
     NetShell* nShell = SomeFunctions::shell(netShell);
-    oss << "Result: ";
 
-    if (nShell->type.find("/manager") != string::npos && nShell->receiverId == 127) {
-        if (!this->logExists(nShell)) {
-            this->concatenateEntry(nShell);
-            oss << "& adding new log " << nShell->type;
-        }
-    } else if (nShell->type.find("manager" + to_string(this->authorId) + "/switch*") != string::npos) {
-        auto seq = nShell->shell->sequenceNum;
-        this->sendEntryFromIndexTo(this->networkLog, this->getKeyByValue(dev), seq, "manager" + to_string(this->authorId) + "/switch*");
-    }
+    this->packetOss << "Received: " << netShell << endl;
+    this->packetOss << "Result: ";
 
-    else {
-        return;
-    }
+    // Broadcasts for the manager
+    if (nShell->type.find("/manager:*") != string::npos && nShell->receiverId == 127) {
+        this->concatenateEntry(nShell);
 
-    auto lastEntry = this->logs[nShell->type].second->getLastEntry();
-    switch(this->hash(lastEntry.shell->function)) {
-        case ADD_TO_NETWORK:
-            this->registerUser(dev, nShell->shell->authorId);
-            oss << "Add neighbour " << to_string(nShell->shell->authorId) << " & register Switch ";
+        auto lastEntry = this->getLogFrom(nShell->type)->getLastEntry();
+        switch(this->hash(lastEntry.shell->function)) {
+            case ADD_TO_NETWORK:
+                this->registerUser(dev, nShell->shell->authorId);
+                this->packetOss << "Add neighbour " << to_string(nShell->shell->authorId) << " & register Switch ";
 //            this->sendNetworkJoinConfirmation(receiverId);
-            this->sendAllLogEntriesTo(nShell->shell->authorId);
-            oss << "& sending log " << "manager" + to_string(this->authorId) + "/switch* ";
-            this->broadcastLastNetworkChange(nShell->shell->authorId);
-            oss << "& broadcasting changes" << endl;
-            break;
-        default:
-            break;
+                this->sendAllLogEntriesTo(nShell->shell->authorId);
+                this->packetOss << "& sending log " << "manager" + to_string(this->authorId) + "/switch* ";
+                this->broadcastLastNetworkChange(nShell->shell->authorId);
+                this->packetOss << "& broadcasting changes" << endl;
+                break;
+            default:
+                break;
+        }
+
+        // Gossip requests
+    } else if (nShell->type.find("manager:" + to_string(this->authorId) + "/switch:*") != string::npos) {
+        if (this->myPersonalLog->getCurrentSeqNum() > nShell->shell->sequenceNum) {
+            auto seq = nShell->shell->sequenceNum;
+            this->sendEntryFromIndexTo(this->networkLog, this->getKeyByValue(dev), seq, "manager" + to_string(this->authorId) + "/switch*");
+        }
+        this->packetOss << "& nothing needed from me" << endl;
+    } else {
+        this->packetOss << "Dropping packet, unknown content" << endl;
     }
-    oss << "---------------ManagerPacket_END----------------\n" << endl;
+
+    this->packetOss << "---------------ManagerPacket_END----------------\n" << endl;
     if (VERBOSE) {
-        cout << oss.str() << endl;
+        // cout << this->packetOss.str() << endl;
     }
 }
 
@@ -116,4 +130,12 @@ bool Manager::processReceivedSwitchPacket(NetShell *netShell, Ptr <NetDevice> de
 
 void Manager::processReceivedUserPacket(NetShell *netShell, Ptr <NetDevice> dev) {
 
+}
+CommunicationLog *Manager::getLogFrom(string type) {
+    for (auto l : this->communicationLogs) {
+        if (l.first == type) {
+            return l.second;
+        }
+    }
+    return NULL;
 }

@@ -17,6 +17,8 @@ public:
     void broadcastLastNetworkChange(int8_t exceptedReceiver);
     bool processReceivedSwitchPacket(NetShell* netShell, Ptr<NetDevice> dev) override;
     void processReceivedUserPacket(NetShell* netShell, Ptr<NetDevice> dev) override;
+    bool concatenateEntry(NetShell* netShell);
+    CommunicationLog* getLogFrom(string type);
 
 
     Manager(int32_t id, double errorRate) : Application() {
@@ -25,6 +27,7 @@ public:
         this->logs.insert({"manager" + to_string(this->authorId) + "/switch*", {this->authorId, new CommunicationLog(this->authorId)}});
         this->logs["manager" + to_string(this->authorId) + "/switch*"].second->initialiseLog();
         this->networkLog = this->logs["manager" + to_string(this->authorId) + "/switch*"].second;
+        this->myPersonalLog = this->networkLog;
     }
     virtual ~Manager() {}
 
