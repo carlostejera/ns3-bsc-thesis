@@ -16,11 +16,23 @@ using namespace std;
 class CommunicationLog {
     private:
     int8_t owner;
+  public:
+    const int8_t &getOwner() const;
+  private:
     vector<LogShell> log;
+    int8_t dedicated;
+  public:
 
-    public:
+  public:
+
     CommunicationLog(int8_t owner) {
         this->owner = owner;
+        this->dedicated = owner;
+    }
+
+    CommunicationLog(int8_t owner, int8_t dedicated) {
+        this->owner = owner;
+        this->dedicated = dedicated;
     }
 
     CommunicationLog(int8_t owner, LogShell* logShell) {
@@ -31,17 +43,16 @@ class CommunicationLog {
 
     void initialiseLog();
     bool addToLog( LogShell shell);
-    void readLog();
-    LogShell readFrom(int seq);
     LogShell getLastEntry();
     LogShell getEntryAt(int entryNum);
     int8_t getCurrentSeqNum();
     int getLogsSize();
     vector<LogShell> getLog();
-    void printLastEntry();
     string getLogAsString();
     string createHash(LogShell shell);
     bool isSubsequentEntry(LogShell lShell);
+    const int8_t& getDedicated() const;
+
 };
 
 #endif

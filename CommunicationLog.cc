@@ -3,12 +3,18 @@
 using namespace ns3;
 using namespace std;
 
-bool CommunicationLog::addToLog(LogShell shell) {
+/**
+ * Adds a log entry to the log, only if the log is empty of if the sequence number and previous hash are correct
+ * @param shell
+ * @return
+ */
 
-    if (this->log.empty()) {
+bool CommunicationLog::addToLog(LogShell shell) {
+    if (this->log.empty() && shell.sequenceNum == 0) {
         this->log.push_back(shell);
         return true;
     }
+    // Check sequence and previous hash
     if (shell.sequenceNum == this->getCurrentSeqNum() + 1 && shell.prevEventHash == this->createHash(this->getLastEntry())) {
         this->log.push_back(shell);
         return true;
@@ -20,19 +26,8 @@ void CommunicationLog::initialiseLog() {
     this->addToLog(LogShell(0, "", this->owner, new ContentShell("", "", "Log initialised")));
 }
 
-void CommunicationLog::readLog() {
-    cout << "--------------------------------" << endl;
-    cout << "--------------------------------" << endl;
-
-}
-
 LogShell CommunicationLog::getLastEntry() {
-    return this->log.back();
-}
-
-// TODO: Not useful
-LogShell CommunicationLog::readFrom(int seq) {
-    cout << seq << endl;
+    cout << to_string(this->owner) << " " << to_string(this->dedicated) << endl;
     return this->log.back();
 }
 
@@ -50,15 +45,6 @@ int CommunicationLog::getLogsSize() {
 
 vector<LogShell> CommunicationLog::getLog() {
     return this->log;
-}
-
-void CommunicationLog::printLastEntry() {
-    Printer p;
-    cout << "ok" << endl;
-    LogShell l = this->getLastEntry();
-    p.visit(&l);
-    cout << p.str() << endl;
-    p.clearOss();
 }
 
 string CommunicationLog::getLogAsString() {
@@ -97,4 +83,10 @@ bool CommunicationLog::isSubsequentEntry(LogShell lShell) {
     ||
     (this->getCurrentSeqNum() + 1 == lShell.sequenceNum && this->createHash(this->getLastEntry()) == lShell.prevEventHash && this->owner == lShell.authorId)
     );
+}
+const int8_t& CommunicationLog::getDedicated() const {
+    return this->dedicated;
+}
+const int8_t &CommunicationLog::getOwner() const {
+    return this->owner;
 }
