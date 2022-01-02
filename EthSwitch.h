@@ -12,7 +12,6 @@ struct EthSwitch : public Application, public NetworkDevice {
     pair<int8_t, Ptr<NetDevice>> manager;
     bool isManagerAssigned = false;
     vector<int8_t> connectedUser;
-    map<int8_t, CommunicationLog*> logsOfUsers;
     multimap<string, int8_t> interestedNeighbours;
 
     void recvPkt(Ptr<NetDevice> dev, Ptr<const Packet> packet, uint16_t proto, const Address& from, const Address& to, NetDevice::PacketType pt );

@@ -53,17 +53,7 @@ void EthSwitch::printNetworkLog() {
     }
     if (this->connectedUser.empty())
         oss << "None" << endl;
-
-    oss << "subscriptions:" << endl;
-    for (auto entry: this->logsOfUsers) {
-        oss << "log for " << to_string(entry.first) << endl;
-        for (auto logShell : this->logsOfUsers[entry.first]->getLog()) {
-            stringAssembler.visit(&logShell);
-            oss << stringAssembler.str() << endl;
-            stringAssembler.clearOss();
-        }
-    }
-    oss << endl << "----------------------" << endl;
+    oss << "----------------------" << endl;
     cout << "\033[1;36m" << oss.str() << "\033[0m\n";
 }
 
