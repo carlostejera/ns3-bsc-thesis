@@ -14,19 +14,19 @@ struct EthSwitch : public Application, public NetworkDevice {
     vector<int8_t> connectedUser;
     multimap<string, int8_t> interestedNeighbours;
 
-    void recvPkt(Ptr<NetDevice> dev, Ptr<const Packet> packet, uint16_t proto, const Address& from, const Address& to, NetDevice::PacketType pt );
-    void requestJoiningNetwork();
-    void assignManager(Ptr<NetDevice>, int8_t);
     void addMemberToNetwork(string params);
-    void printNetworkLog() override;
-    void sendPlugAndPlayConfirmation(Ptr<NetDevice>, int8_t);
-    bool isInList(vector <int8_t> v, int8_t authorId);
+    void assignManager(Ptr<NetDevice>, int8_t);
+    void broadcastToNeighbours(Ptr<NetDevice> dev, NetShell* nShell);
     void forward(Ptr<NetDevice>, NetShell*, uint8_t hops);
+    CommunicationLog* getLogFrom(string type);
     void gossip();
+    bool isInList(vector <int8_t> v, int8_t authorId);
+    void printNetworkLog() override;
     bool processReceivedSwitchPacket(NetShell* nShell, Ptr<NetDevice> dev) override;
     void processReceivedUserPacket(NetShell* nShell, Ptr<NetDevice> dev) override;
-    void broadcastToNeighbours(Ptr<NetDevice> dev, NetShell* nShell);
-    CommunicationLog* getLogFrom(string type);
+    void recvPkt(Ptr<NetDevice> dev, Ptr<const Packet> packet, uint16_t proto, const Address& from, const Address& to, NetDevice::PacketType pt );
+    void requestJoiningNetwork();
+    void sendPlugAndPlayConfirmation(Ptr<NetDevice>, int8_t);
 
     EthSwitch(int8_t authorId, double errorRate) {
         this->authorId = authorId;
