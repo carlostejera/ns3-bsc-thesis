@@ -10,8 +10,8 @@ using namespace std;
 
 struct EthSwitch : public Application, public NetworkDevice {
     pair<int8_t, Ptr<NetDevice>> manager;
+    bool isManagerAssigned = false;
     vector<int8_t> connectedUser;
-    map<int8_t, Ptr<NetDevice>> pit;
     map<int8_t, CommunicationLog*> logsOfUsers;
     multimap<string, int8_t> interestedNeighbours;
 
@@ -27,17 +27,11 @@ struct EthSwitch : public Application, public NetworkDevice {
     bool processReceivedSwitchPacket(NetShell* nShell, Ptr<NetDevice> dev) override;
     void processReceivedUserPacket(NetShell* nShell, Ptr<NetDevice> dev) override;
     void broadcastToNeighbours(Ptr<NetDevice> dev, NetShell* nShell);
-
-
+    CommunicationLog* getLogFrom(string type);
 
     EthSwitch(int8_t authorId, double errorRate) {
         this->authorId = authorId;
         this->networkLog = new CommunicationLog(authorId);
-
-        this->rem = CreateObject<RateErrorModel>();
-        Ptr<UniformRandomVariable> uv = CreateObject<UniformRandomVariable>();
-        this->rem->SetRandomVariable(uv);
-        this->rem->SetRate(errorRate);
     }
     virtual ~EthSwitch() {}
     virtual void StartApplication(void) {
@@ -47,6 +41,8 @@ struct EthSwitch : public Application, public NetworkDevice {
                     0x800,
                     GetNode()->GetDevice(i)); //Register Event Handler to all Devices
         }
+        this->requestJoiningNetwork();
+        Simulator::ScheduleDestroy(&EthSwitch::printNetworkLog, this);
     }
 
 };
