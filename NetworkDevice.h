@@ -10,6 +10,7 @@ using namespace std;
 
 class NetworkDevice {
 protected:
+    // Attributes
     ostringstream packetOss;
     vector<int8_t> familyMembers;
     std::map<int8_t, Ptr<NetDevice>> neighbourMap;
@@ -46,7 +47,6 @@ protected:
 public:
     virtual void printNetworkLog();
 
-    virtual void gossip();
 
 
 

@@ -14,16 +14,6 @@ string NetworkDevice::readPacket(Ptr<const Packet> packet) {
     return netShell;
 }
 
-void NetworkDevice::gossip() {
-    for (auto iter = this->neighbourMap.begin(); iter != this->neighbourMap.end(); iter++) {
-        auto authorId = iter->first;
-        // If neighbour is family member, send last entry to compare sequence numbers
-        if (this->isFamilyMember(authorId)) {
-            this->sendLastEntryTo(authorId, GOSSIP);
-        }
-    }
-}
-
 
 /**
  * Converts the given net shell to a string and then it gets converted into a char sequence to finally create the
