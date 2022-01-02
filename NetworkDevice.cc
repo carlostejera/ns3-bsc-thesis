@@ -82,20 +82,6 @@ void NetworkDevice::printNetworkLog() {
     cout << "\033[1;" << to_string(20 + this->authorId) << "m" << oss.str() << "\033[0m\n";
 }
 
-void NetworkDevice::sendLastEntryTo(int8_t authorId, string type) {
-    auto receiverNetDevice = this->neighbourMap[authorId];
-    auto receiverMac = ns3::Mac48Address::ConvertFrom(receiverNetDevice->GetAddress());
-
-    if (this->networkLog->getLog().empty()) {
-        return;
-    }
-
-    LogShell lShell = this->networkLog->getLastEntry();
-    NetShell* nShell = new NetShell(receiverMac, authorId, type, 0, &lShell);
-    Ptr<Packet> p = this->createPacket(nShell);
-    this->sendPacket(receiverNetDevice, p);
-}
-
 void NetworkDevice::sendEntryFromIndexTo(CommunicationLog* log, int8_t receiverId, int8_t seqFrom, string type) {
     if (receiverId == -1) {
         this->packetOss << "Not known neighbour. dropped" << endl;

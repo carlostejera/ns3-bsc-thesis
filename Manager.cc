@@ -9,7 +9,7 @@ void Manager::registerUser(Ptr<NetDevice> dev, int8_t authorId) {
     oss << "New member arrived. Add " << to_string(authorId) << " to member list";
     this->neighbourMap.insert(make_pair(authorId, dev));
     this->familyMembers.push_back(authorId);
-    this->networkLog->addToLog(LogShell(this->networkLog->getCurrentSeqNum() + 1, this->networkLog->createHash(this->networkLog->getLastEntry()), this->authorId,
+    this->myPersonalLog->addToLog(LogShell(this->myPersonalLog->getCurrentSeqNum() + 1, this->myPersonalLog->createHash(this->myPersonalLog->getLastEntry()), this->authorId,
                                         new ContentShell(ADD_MEMBER, to_string(authorId), oss.str())));
     this->currSeq++;
 }
@@ -27,31 +27,19 @@ void Manager::sendNetworkJoinConfirmation(int8_t authorId) {
     this->sendPacket(nDev, p);
 }
 
-void Manager::sendAllLogEntriesTo(int8_t authorReceiverId) {
-    auto receiverNetDevice = this->neighbourMap[authorReceiverId];
-    auto receiverMac = ns3::Mac48Address::ConvertFrom(receiverNetDevice->GetAddress());
-    NetShell* nShell;
-    Ptr<Packet> p;
-    cout << "Sending " << to_string(this->networkLog->getLogsSize()) << " entries to " << to_string(authorReceiverId) << endl;
-    for (int i = 0; i < this->networkLog->getLogsSize(); i++) {
-        auto log = this->networkLog->getEntryAt(i);
-        nShell = new NetShell(receiverMac, authorReceiverId, "manager:" + to_string(this->authorId) + "/switch:*", 0, &log);
-        p = this->createPacket(nShell);
-        this->sendPacket(receiverNetDevice, p);
-    }
-
-}
-
 void Manager::broadcastLastNetworkChange(int8_t exceptedReceiver =-1) {
+    auto seq = this->myPersonalLog->getLastEntry().sequenceNum;
+    auto type = "manager:" + to_string(this->authorId) + "/switch:*";
+
     for (auto iter = this->neighbourMap.begin(); iter != this->neighbourMap.end(); iter++) {
-        auto authorId = iter->first;
+        auto receiverAuthor = iter->first;
 
         // TODO: Drop one packet on purpose
-        if (authorId == 3 && exceptedReceiver == 4)
+        if (receiverAuthor == 3 && exceptedReceiver == 4)
             continue;
 
-        if (authorId != exceptedReceiver) {
-            this->sendLastEntryTo(authorId, "manager:" + to_string(this->authorId) + "/switch:*");
+        if (receiverAuthor != exceptedReceiver) {
+            this->sendEntryFromIndexTo(this->myPersonalLog, receiverAuthor, seq, type);
         }
     }
 }
@@ -98,7 +86,7 @@ void Manager::recvPkt(
                 this->registerUser(dev, nShell->shell->authorId);
                 this->packetOss << "Add neighbour " << to_string(nShell->shell->authorId) << " & register Switch ";
 //            this->sendNetworkJoinConfirmation(receiverId);
-                this->sendAllLogEntriesTo(nShell->shell->authorId);
+                this->sendEntryFromIndexTo(this->myPersonalLog, nShell->shell->authorId, 0, this->myType);
                 this->packetOss << "& sending log " << "manager" + to_string(this->authorId) + "/switch* ";
                 this->broadcastLastNetworkChange(nShell->shell->authorId);
                 this->packetOss << "& broadcasting changes" << endl;
@@ -111,7 +99,7 @@ void Manager::recvPkt(
     } else if (nShell->type.find("manager:" + to_string(this->authorId) + "/switch:*") != string::npos) {
         if (this->myPersonalLog->getCurrentSeqNum() > nShell->shell->sequenceNum) {
             auto seq = nShell->shell->sequenceNum;
-            this->sendEntryFromIndexTo(this->networkLog, this->getKeyByValue(dev), seq, "manager" + to_string(this->authorId) + "/switch*");
+            this->sendEntryFromIndexTo(this->myPersonalLog, this->getKeyByValue(dev), seq, "manager" + to_string(this->authorId) + "/switch*");
         }
         this->packetOss << "& nothing needed from me" << endl;
     } else {

@@ -14,7 +14,6 @@ protected:
     ostringstream packetOss;
     vector<int8_t> familyMembers;
     std::map<int8_t, Ptr<NetDevice>> neighbourMap;
-    CommunicationLog* networkLog;
     int8_t authorId;
     map<string, pair<int8_t , CommunicationLog*>> logs;
     vector<pair<string, CommunicationLog*>> communicationLogs;
@@ -26,7 +25,6 @@ protected:
     Ptr<Packet> createPacket(NetShell* nShell);
     void sendPacket(Ptr<NetDevice> nDev, Ptr<Packet> p);
     bool isFamilyMember(int8_t authorId);
-    void sendLastEntryTo(int8_t authorId, string type = LOG_ENTRY);
     void sendEntryFromIndexTo(CommunicationLog* log, int8_t receiverId, int8_t seqFrom, string type);
     int8_t getKeyByValue(Ptr<NetDevice>);
     int8_t convertStringToId(string);
