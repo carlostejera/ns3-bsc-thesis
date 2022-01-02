@@ -7,29 +7,16 @@
 using namespace ns3;
 using namespace std;
 
-void SwitchScheduleJoin(Ptr <EthSwitch> dev) {
-    dev->requestJoiningNetwork();
-}
+string userPath = "/home/carlos/Documents/bake/source/ns-3.32/scratch/ns3-bsc-thesis/img/pc.svg";
+string switchPath = "/home/carlos/Documents/bake/source/ns-3.32/scratch/ns3-bsc-thesis/img/eth.svg";
+string managerPath = "/home/carlos/Documents/bake/source/ns-3.32/scratch/ns3-bsc-thesis/img/manager.svg";
 
-void SwitchScheduleGossip(Ptr <EthSwitch> dev) {
-    dev->gossip();
-}
+void errorSettings(const double errorRate) {
+    Config::SetDefault ("ns3::RateErrorModel::ErrorRate", DoubleValue (errorRate));
+    Config::SetDefault ("ns3::RateErrorModel::ErrorUnit", StringValue ("ERROR_UNIT_PACKET"));
 
-void UserScheduleJoin(Ptr<User> dev) {
-    dev->plugAndPlay();
-}
-
-void UserScheduleSubscribe(Ptr<User> dev, uint8_t authorId) {
-    dev->subscribe(authorId);
-}
-
-void UserSchedulePushLog(Ptr<User> dev) {
-    dev->pushLogToSwitch();
-}
-
-template <class T>
-void SchedulePrintNetworkLog(Ptr <T> dev) {
-    dev->printNetworkLog();
+    Config::SetDefault ("ns3::BurstErrorModel::ErrorRate", DoubleValue (1));
+    Config::SetDefault ("ns3::BurstErrorModel::BurstSize", StringValue ("ns3::UniformRandomVariable[Min=1|Max=3]"));
 }
 
 template <class T>
@@ -40,175 +27,56 @@ void addApplicationToNodes(Ptr<T>* apps, NodeContainer nodes, uint32_t beginFrom
     }
 }
 
-void confNodes(AnimationInterface* anim,
-                 Ptr<Node> node,
+void confNodes(AnimationInterface& anim,
+                 NodeContainer& nodeContainer,
                  string path,
                  string desc,
                  int x,
-                 int y) {
-        anim->SetConstantPosition(node, x, y);  //set position of nodes in the animaiton
-        anim->UpdateNodeSize(node->GetId(), 10, 10);
-        anim->UpdateNodeImage(node->GetId(), anim->AddResource(path));
-        anim->UpdateNodeDescription(node->GetId(), desc);
-}
-
-void otherTopology(const uint32_t userNumbers, const uint32_t switchNumbers, const uint32_t managerNumbers) {
-
-    NodeContainer user_nodes;
-    user_nodes.Create(userNumbers);
-    NodeContainer switch_nodes;
-    switch_nodes.Create(switchNumbers);
-
-    NodeContainer manager_nodes;
-    manager_nodes.Create(managerNumbers);
-
-    PointToPointHelper p2p;
-    p2p.SetDeviceAttribute("DataRate", StringValue("5Mbps"));
-    p2p.SetChannelAttribute("Delay", StringValue("2ms"));
-
-    // Connect switches to switches and to the manager
-    for (uint32_t i = 0; i < switchNumbers - 1; i++) {
-        p2p.Install(switch_nodes.Get(i), switch_nodes.Get(i + 1));
-        p2p.Install(switch_nodes.Get(i), manager_nodes.Get(0));
+                 int y,
+                 int xDistance = 0,
+                 int yDistance = 0) {
+    Ptr<Node> node;
+    for (uint32_t i = 0; i < nodeContainer.GetN(); i++) {
+        node = nodeContainer.Get(i);
+        anim.SetConstantPosition(node, x, y);  //set position of nodes in the animaiton
+        anim.UpdateNodeSize(node->GetId(), 10, 10);
+        anim.UpdateNodeImage(node->GetId(), anim.AddResource(path));
+        anim.UpdateNodeDescription(node->GetId(), desc + ":" + to_string(i));
+        x += xDistance;
+        y += yDistance;
     }
-    p2p.Install(switch_nodes.Get(switchNumbers - 1), switch_nodes.Get(0));
-    p2p.Install(switch_nodes.Get(switchNumbers - 1), manager_nodes.Get(0));
-
-    //Connect users to switches
-    p2p.Install(user_nodes.Get(0), switch_nodes.Get(0));
-    p2p.Install(user_nodes.Get(1), switch_nodes.Get(3));
-    p2p.Install(user_nodes.Get(2), switch_nodes.Get(5));
-
-    Ptr <User> user_apps[userNumbers];
-    Ptr <EthSwitch> switch_apps[switchNumbers];
-    Ptr <Manager> manager_apps[managerNumbers];
-    int ethId = 10;
-    int managerId = 100;
-
-    addApplicationToNodes<User>(user_apps, user_nodes, 0, 0);
-    addApplicationToNodes<EthSwitch>(switch_apps, switch_nodes, ethId, 0.001);
-    addApplicationToNodes<Manager>(manager_apps, manager_nodes, managerId, 0);
-
-
-
-    p2p.EnablePcap("test.pcap", user_nodes.Get(1)->GetDevice(0), true, true);
-
-    AnimationInterface anim("topology_bcs.xml");
-    anim.EnablePacketMetadata(true);
-    string pcPath = "/mnt/c/Users/carlosandrestejera/Documents/university/bachelorthesis/source/ns-3.30/scratch/ns3-bsc-thesis/img/pc.svg";
-    string switchPath = "/mnt/c/Users/carlosandrestejera/Documents/university/bachelorthesis/source/ns-3.30/scratch/ns3-bsc-thesis/img/eth.svg";
-    string managerPath = "/mnt/c/Users/carlosandrestejera/Documents/university/bachelorthesis/source/ns-3.30/scratch/ns3-bsc-thesis/img/manager.svg";
-
-    confNodes(&anim, user_nodes.Get(0), pcPath, "User" + to_string(0), 0, 0);
-    confNodes(&anim, user_nodes.Get(1), pcPath, "User" + to_string(1), 100, 100);
-
-    int x = 23;
-    int y = 23;
-    uint32_t i = 0;
-    for (; i < switchNumbers / 2; i++) {
-        confNodes(&anim, switch_nodes.Get(i), switchPath, "Switch" + to_string(i + ethId), x, y);
-        x += 27;
-    }
-
-    y = 77;
-    for (; i < switchNumbers; i++) {
-        x -= 27;
-        confNodes(&anim, switch_nodes.Get(i), switchPath, "Switch" + to_string(i + ethId), x, y);
-    }
-
-    confNodes(&anim, manager_nodes.Get(0), managerPath, "Manager" + to_string(managerId), 50, 50);
-
-
-
-    //---------------------------------------------------------------------------------------------------------------------------------------
-    //---------------------------------------------------------------------------------------------------------------------------------------
-    //---------------------------------------------------------------------------------------------------------------------------------------
-    //---------------------------------------------------------------------------------------------------------------------------------------
-    //---------------------------------------------------------------------------------------------------------------------------------------
-
-    uint64_t time = 2000;
-    // Switches joining network
-    for (uint8_t i = 0; i < switchNumbers; i++) {
-        Simulator::Schedule(MilliSeconds(time), &SwitchScheduleJoin, switch_apps[i]);
-    }
-
-    // Gossiping
-    for (int j = 0 ; j < 10; j ++ ) {
-        for (uint8_t i = 0; i < switchNumbers; i++) {
-            Simulator::Schedule(Seconds(time), &SwitchScheduleGossip, switch_apps[i]);
-            time += 300;
-        }
-    }
-    cout << VERBOSE << endl;
-
-    for (uint8_t i = 0; i < userNumbers; i++) {
-        Simulator::Schedule(Seconds(time), &UserScheduleJoin, user_apps[i]);
-        time += 100;
-    }
-
-    for (int i = 0; i < 3; i++) {
-        Simulator::Schedule(Seconds(time), &UserSchedulePushLog, user_apps[1]);
-        time += 100;
-    }
-
-    Simulator::Schedule(Seconds(time), &UserScheduleSubscribe, user_apps[0], 1);
-    time += 1000;
-    Simulator::Schedule(Seconds(time), &UserScheduleSubscribe, user_apps[2], 1);
-
-    time += 100;
-
-    for (int i = 0; i < 3; i++) {
-        Simulator::Schedule(Seconds(time), &UserSchedulePushLog, user_apps[1]);
-        time += 0.1;
-    }
-    time += 100;
-
-
-    for (int j = 0 ; j < 100; j ++ ) {
-        for (uint8_t i = 0; i < switchNumbers; i++) {
-            Simulator::Schedule(Seconds(time), &SwitchScheduleGossip, switch_apps[i]);
-            time += 300;
-        }
-    }
-
-    for (uint8_t i = 0; i < switchNumbers; i++) {
-        Simulator::Schedule(Seconds(time), &SchedulePrintNetworkLog<EthSwitch>, switch_apps[i]);
-    }
-    Simulator::Schedule(Seconds(time), &SchedulePrintNetworkLog<Manager>, manager_apps[0]);
-
-    for (uint8_t i = 0; i < userNumbers; i++) {
-        Simulator::Schedule(Seconds(time), &SchedulePrintNetworkLog<User>, user_apps[i]);
-    }
-
-    Simulator::Run(); //run simulation
-    Simulator::Destroy(); //end simulation
-
-
 }
 
 void lineTopology(const uint32_t userNumbers, const uint32_t switchNumbers, const uint32_t managerNumbers, const double errorRate) {
-    NodeContainer user_nodes;
-    user_nodes.Create(userNumbers);
-    NodeContainer switch_nodes;
-    switch_nodes.Create(switchNumbers);
 
+    errorSettings(errorRate);
+
+    NodeContainer user_nodes;
+    NodeContainer switch_nodes;
     NodeContainer manager_nodes;
+
+    NetDeviceContainer switchToSwitchContainer;
+    NetDeviceContainer mangerToSwitchContainer;
+    NetDeviceContainer userToSwitchContainer;
+
     manager_nodes.Create(managerNumbers);
+    user_nodes.Create(userNumbers);
+    switch_nodes.Create(switchNumbers);
 
     PointToPointHelper p2p;
     p2p.SetDeviceAttribute("DataRate", StringValue("5Mbps"));
     p2p.SetChannelAttribute("Delay", StringValue("2ms"));
-
+    
     // Connect switches to switches and to the manager
     for (uint32_t i = 0; i < switchNumbers - 1; i++) {
-        p2p.Install(switch_nodes.Get(i), switch_nodes.Get(i + 1));
-        p2p.Install(switch_nodes.Get(i), manager_nodes.Get(0));
+        switchToSwitchContainer.Add(p2p.Install(switch_nodes.Get(i), switch_nodes.Get(i + 1)));
+        mangerToSwitchContainer.Add(p2p.Install(switch_nodes.Get(i), manager_nodes.Get(0)));
     }
-    p2p.Install(switch_nodes.Get(switchNumbers - 1), manager_nodes.Get(0));
+    mangerToSwitchContainer.Add(p2p.Install(switch_nodes.Get(switchNumbers - 1), manager_nodes.Get(0)));
 
     //Connect users to switches
-    p2p.Install(user_nodes.Get(0), switch_nodes.Get(0));
-    p2p.Install(user_nodes.Get(1), switch_nodes.Get(switchNumbers - 1));
+    userToSwitchContainer.Add(p2p.Install(user_nodes.Get(0), switch_nodes.Get(0)));
+    userToSwitchContainer.Add(p2p.Install(user_nodes.Get(1), switch_nodes.Get(switchNumbers - 1)));
 
     Ptr <User> user_apps[userNumbers];
     Ptr <EthSwitch> switch_apps[switchNumbers];
@@ -217,72 +85,107 @@ void lineTopology(const uint32_t userNumbers, const uint32_t switchNumbers, cons
     int managerId = 100;
 
     addApplicationToNodes<User>(user_apps, user_nodes, 0, 0);
-    addApplicationToNodes<EthSwitch>(switch_apps, switch_nodes, ethId, errorRate);
+    addApplicationToNodes<EthSwitch>(switch_apps, switch_nodes, ethId, 0);
     addApplicationToNodes<Manager>(manager_apps, manager_nodes, managerId, 0);
 
-    p2p.EnablePcap("test.pcap", user_nodes.Get(1)->GetDevice(0), true, true);
+    // Add error model (packet loss)
+    ObjectFactory factory;
+    factory.SetTypeId("ns3::RateErrorModel");
+    Ptr<ErrorModel> em = factory.Create<ErrorModel>();
 
-    string pcPath = "/mnt/c/Users/carlosandrestejera/Documents/university/bachelorthesis/source/ns-3.30/scratch/ns3-bsc-thesis/img/pc.svg";
-    string switchPath = "/mnt/c/Users/carlosandrestejera/Documents/university/bachelorthesis/source/ns-3.30/scratch/ns3-bsc-thesis/img/eth.svg";
-    string managerPath = "/mnt/c/Users/carlosandrestejera/Documents/university/bachelorthesis/source/ns-3.30/scratch/ns3-bsc-thesis/img/manager.svg";
+    for (uint32_t i = 0; i < switchToSwitchContainer.GetN(); i++) {
+        switchToSwitchContainer.Get(i)->SetAttribute("ReceiveErrorModel", PointerValue(em));
+    }
+    for (uint32_t i = 0; i < mangerToSwitchContainer.GetN(); i++) {
+        mangerToSwitchContainer.Get(i)->SetAttribute("ReceiveErrorModel", PointerValue(em));
+    }
+    for (uint32_t i = 0; i < userToSwitchContainer.GetN(); i++) {
+        userToSwitchContainer.Get(i)->SetAttribute("ReceiveErrorModel", PointerValue(em));
+    }
 
     p2p.EnablePcapAll ("myNetworkPcaps");
 
     // CONSTELLATION
     //---------------------------------------------------------------------------------------------------------------------------------------
-    //---------------------------------------------------------------------------------------------------------------------------------------
     AnimationInterface anim("topology_bcs.xml");
     anim.EnablePacketMetadata(true);
 
-    confNodes(&anim, user_nodes.Get(0), pcPath, "User" + to_string(0), 0, 0);
-    confNodes(&anim, user_nodes.Get(1), pcPath, "User" + to_string(1), 100, 0);
-
     int distance = 20;
-    int start = - ((distance * switchNumbers) / 2);
 
-    confNodes(&anim, user_nodes.Get(0), pcPath, "User" + to_string(0), start, 0);
-    confNodes(&anim, user_nodes.Get(1), pcPath, "User" + to_string(1), -start, 0);
-
-
-    int x = start;
-    int y = 50;
-    uint32_t i = 0;
-    for (; i < switchNumbers; i++) {
-        confNodes(&anim, switch_nodes.Get(i), switchPath, "Switch" + to_string(i + ethId), x, y);
-        x += distance;
-    }
-
-    confNodes(&anim, manager_nodes.Get(0), managerPath, "Manager" + to_string(managerId), 0, 0);
+    confNodes(anim, user_nodes, userPath, "User" + to_string(0), 0, 0, 100);
+    confNodes(anim, switch_nodes, switchPath, "Switch" + to_string(ethId), 10, 50, distance);
+    confNodes(anim, manager_nodes, managerPath, "Manager" + to_string(managerId), 50, 0);
 
     // SCHEDULE
     //---------------------------------------------------------------------------------------------------------------------------------------
+    auto stopTime = Seconds(20);
+
+    for (uint32_t i = 0; i < switch_nodes.GetN(); i++) {
+        switch_apps[i]->SetStartTime(Seconds(1));
+    }
+    for (uint32_t i = 0; i < user_nodes.GetN(); i++) {
+        user_apps[i]->SetStartTime(Seconds(2));
+    }
+    Simulator::Schedule(Seconds(3), &User::subscribe, user_apps[0], 1);
+
+    for (int i = 0; i < 10; i++) {
+        Simulator::Schedule(Seconds(3), &User::pushLogToSwitch, user_apps[1]);
+    }
+
+
+    Simulator::Stop(Seconds(10));
+    Simulator::Run(); //run simulation
+    Simulator::Destroy(); //end simulation
+
+}
+
+void p2pTopology(const double errorRate) {
+    errorSettings(errorRate);
+
+    uint32_t switchNumbers = 1;
+    uint32_t managerNumbers = 1;
+
+    NodeContainer switch_nodes;
+    switch_nodes.Create(switchNumbers);
+    NodeContainer manager_nodes;
+    manager_nodes.Create(managerNumbers);
+
+    PointToPointHelper p2p;
+    p2p.SetDeviceAttribute("DataRate", StringValue("5Mbps"));
+    p2p.SetChannelAttribute("Delay", StringValue("2ms"));
+
+    NetDeviceContainer device_container = p2p.Install(switch_nodes.Get(switchNumbers - 1), manager_nodes.Get(0));
+
+    Ptr <EthSwitch> switch_apps[switchNumbers];
+    Ptr <Manager> manager_apps[managerNumbers];
+    int ethId = 10;
+    int managerId = 100;
+
+    addApplicationToNodes<EthSwitch>(switch_apps, switch_nodes, ethId, 0);
+    addApplicationToNodes<Manager>(manager_apps, manager_nodes, managerId, 0);
+
+    ObjectFactory factory;
+    factory.SetTypeId("ns3::RateErrorModel");
+    Ptr<ErrorModel> em = factory.Create<ErrorModel>();
+    device_container.Get(0)->SetAttribute("ReceiveErrorModel", PointerValue(em));
+
+    p2p.EnablePcapAll ("p2pTopologyPCAPS");
+
+    // CONSTELLATION
     //---------------------------------------------------------------------------------------------------------------------------------------
-    uint32_t time = 2000;
-    // Switches joining network
-    for (uint8_t i = 0; i < switchNumbers; i++) {
-        Simulator::Schedule(MilliSeconds(time), &SwitchScheduleJoin, switch_apps[i]);
-        time += 100;
-    }
-    for (int j = 0; j < 100; j++) {
-        for (uint8_t i = 0; i < switchNumbers; i++) {
-            Simulator::Schedule(Seconds(time), &SwitchScheduleGossip, switch_apps[i]);
-        }
-        time += 2000;
-    }
-
-
-
-    //PRINTER
     //---------------------------------------------------------------------------------------------------------------------------------------
-    //---------------------------------------------------------------------------------------------------------------------------------------
-    for (uint8_t i = 0; i < switchNumbers; i++) {
-        Simulator::Schedule(Seconds(time), &SchedulePrintNetworkLog<EthSwitch>, switch_apps[i]);
-    }
-    Simulator::Schedule(Seconds(time), &SchedulePrintNetworkLog<Manager>, manager_apps[0]);
+    AnimationInterface anim("p2pTopology.xml");
+    anim.EnablePacketMetadata(true);
 
-    for (uint8_t i = 0; i < userNumbers; i++) {
-        Simulator::Schedule(Seconds(time), &SchedulePrintNetworkLog<User>, user_apps[i]);
-    }
+    int distance = 20;
+    int x =  - ((distance * switchNumbers) / 2);
+    int y = 50;
+    confNodes(anim, switch_nodes, switchPath, "Switch" + to_string(ethId), x, y, distance);
+    confNodes(anim, manager_nodes, managerPath, "Manager" + to_string(managerId), 0, 0);
+
+
+    switch_apps[0]->SetStartTime(Seconds(1));
+    switch_apps[0]->SetStopTime(Seconds(20));
 
     Simulator::Run(); //run simulation
     Simulator::Destroy(); //end simulation
@@ -293,12 +196,18 @@ void lineTopology(const uint32_t userNumbers, const uint32_t switchNumbers, cons
 int main(int argc, char *argv[]) {
 
     CommandLine cmd;
+    string topology = "";
+    cmd.AddValue("topo", "Test topology", topology);
     cmd.Parse(argc, argv);
-    cout << VERBOSE << endl;
+
     Time::SetResolution(Time::NS);
     Packet::EnablePrinting();
     Packet::EnableChecking();
-//    otherTopology(3, 6, 1);
-    lineTopology(2, 10, 1, 0.009);
+
+    if (topology == "line") {
+        lineTopology(2, 5, 1, 0.001);
+    } else if (topology == "p2p") {
+        p2pTopology(0);
+    }
     return 0;
 }
