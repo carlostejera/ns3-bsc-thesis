@@ -32,7 +32,9 @@ void EthSwitch::requestJoiningNetwork() {
 
 
 void EthSwitch::assignManager(Ptr<NetDevice> sender, int8_t managerId) {
-    this->manager = make_pair(managerId, sender);
+    this->manager = {managerId, sender};
+    this->packetOss << "& assigning manager " << endl;
+    this->isManagerAssigned = true;
 }
 
 void EthSwitch::addMemberToNetwork(string params) {
@@ -231,9 +233,7 @@ bool EthSwitch::processReceivedSwitchPacket(NetShell *nShell, Ptr <NetDevice> de
         }
     }
     if (nShell->type.find("manager") != string::npos && nShell->receiverId == this->authorId && !this->isManagerAssigned) {
-        this->manager = {nShell->shell->authorId, dev};
-        this->packetOss << "& assigning manager " << endl;
-        this->isManagerAssigned = true;
+        this->assignManager(dev, nShell->shell->authorId);
         Simulator::Schedule(Seconds(5), &EthSwitch::gossip, this);
     }
     return this->concatenateEntry(nShell);
