@@ -77,7 +77,7 @@ void Manager::recvPkt(
     this->packetOss << "Result: ";
 
     // Broadcasts for the manager
-    if (nShell->type.find("/manager:*") != string::npos && nShell->receiverId == "127") {
+    if (nShell->type.find(MANAGER_ALL) != string::npos && nShell->receiverId == MANAGER_ALL) {
         this->concatenateEntry(nShell);
 
         auto lastEntry = this->getLogFrom(nShell->type)->getLastEntry();
