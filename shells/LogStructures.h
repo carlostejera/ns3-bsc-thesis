@@ -38,6 +38,9 @@ static constexpr const char* ADD_MEMBER = "addMemberToNetwork";
 static constexpr const char* ASSIGN_MANAGER = "assignManager";
 static constexpr const char* GOSSIP = "gossip";
 
+
+static constexpr const char* UNSUBSCRIBE = "removeUserFromInl";
+
 static constexpr const char* SWITCH_PREFIX = "switch:";
 static constexpr const char* USER_PREFIX = "user:";
 static constexpr const char* MANAGER_PREFIX = "manager:";
@@ -45,6 +48,7 @@ static constexpr const char* ALL_SUFFIX = "*";
 static constexpr const char* MANAGER_RECEIVER = *("/") + MANAGER_PREFIX;
 static constexpr const char* SWITCH_RECEIVER = *("/") + SWITCH_PREFIX;
 static constexpr const char* USER_RECEIVER = *("/") + USER_PREFIX;
+static constexpr const char* USER_ALL = "user:*";
 
 
 struct ExpressionVisitor {
