@@ -26,6 +26,7 @@ void Printer::visit(NetShell *nShell) {
     oss
     << "nShell=(receiver=" << nShell->macReceiver << "/" << nShell->receiverId
     << "|type=" << nShell->type
+    << "|flag=" << to_string(nShell->flag)
     << "|hops=" <<  to_string(nShell->hops) << "|";
     nShell->shell->accept(this);
     oss << ")";

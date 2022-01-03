@@ -101,7 +101,7 @@ void NetworkDevice::sendEntryFromIndexTo(CommunicationLog* log, std::string rece
     auto receiverMac = ns3::Mac48Address::ConvertFrom(receiverNetDevice->GetAddress());
     for (int i = seqFrom; i <= log->getCurrentSeqNum(); i++) {
         auto lShell = log->getEntryAt(i);
-        NetShell* nShell = new NetShell(receiverMac, receiverId, type, 0, &lShell);
+        NetShell* nShell = new NetShell(receiverMac, receiverId, type, 0, 0, &lShell);
         Ptr<Packet> p = this->createPacket(nShell);
         this->sendPacket(receiverNetDevice, p);
     }

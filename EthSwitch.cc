@@ -17,7 +17,7 @@ void EthSwitch::requestJoiningNetwork() {
     LogShell lShell = log->getLastEntry();
     LogShell* lShell_p = &lShell;
     string commLog = LOGTYPE(this->authorId, MANAGER_ALL);
-    NetShell *nShell = new NetShell(ns3::Mac48Address("FF:FF:FF:FF:FF:FF"),MANAGER_ALL,commLog,0,lShell_p);
+    NetShell *nShell = new NetShell(ns3::Mac48Address("FF:FF:FF:FF:FF:FF"),MANAGER_ALL,commLog,0, 0,lShell_p);
     this->logs.insert({commLog, {"127", log}});
     this->communicationLogs.insert({commLog, log});
     // Broadcast that the user wants to join the network (simulating via uni-cast)
@@ -95,6 +95,7 @@ void EthSwitch::sendPlugAndPlayConfirmation(Ptr<NetDevice> dev, std::string auth
                 authorId,
                 logName,
                 0,
+                0,
                 &(tmp)
                     )
     );
@@ -124,7 +125,7 @@ void EthSwitch::gossip() {
         if (log->getLog().empty()) { // If the chosen log is empty, tell that your neighbours with a fake log entry to get help
             auto cShell = new ContentShell("f", "p", "I have no content");
             auto lShell = new LogShell(-1, "", this->manager.first, cShell);
-            nShell = new NetShell(Mac48Address::ConvertFrom(entry.second->GetAddress()), entry.first, randomLogType, 0, lShell);
+            nShell = new NetShell(Mac48Address::ConvertFrom(entry.second->GetAddress()), entry.first, randomLogType, 1, 0, lShell);
 //            if (entry.first != this->manager.first) {
                 auto packet = this->createPacket(nShell);
                 this->sendPacket(entry.second, packet);
@@ -132,7 +133,7 @@ void EthSwitch::gossip() {
         } else {
             LogShell tmp = log->getLastEntry();
             LogShell* p = &tmp;
-            nShell = new NetShell(Mac48Address::ConvertFrom(entry.second->GetAddress()), entry.first, randomLogType, 0, p);
+            nShell = new NetShell(Mac48Address::ConvertFrom(entry.second->GetAddress()), entry.first, randomLogType, 1, 0, p);
 //            if (entry.first != this->manager.first) {
                 auto packet = this->createPacket(nShell);
                 this->sendPacket(entry.second, packet);
@@ -151,7 +152,6 @@ void EthSwitch::recvPkt(
         const Address &from,
         const Address &to,
         NetDevice::PacketType pt) {
-    bool color = false;
 
     // Reads packet size and prepares the transformation of bytes to string
     string netShell = this->readPacket(packet);
@@ -208,7 +208,6 @@ void EthSwitch::recvPkt(
                     break;
             }
         } else {
-            color = true;
         }
 
     } else if (nShell->type.find("/user") != string::npos) {
@@ -220,7 +219,7 @@ void EthSwitch::recvPkt(
 
     this->packetOss << "----------------SwitchPacket_END----------------\n" << endl;
     if (VERBOSE) {
-        if(color) {
+        if(nShell->flag == 1) {
             this->printBlack(this->packetOss.str());
         } else {
             this->printPacketResult();
@@ -326,14 +325,14 @@ void EthSwitch::broadcastToNeighbours(Ptr <NetDevice> dev, NetShell *nShell) {
                 this->communicationLogs[logType]->initialiseLog();
                 LogShell tmp = this->communicationLogs[logType]->getLastEntry();
                 LogShell* lShell_p = &tmp;
-                NetShell* initNShell = new NetShell(ns3::Mac48Address::ConvertFrom(newReceiverDev->GetAddress()), neighbourId, logType, 0, lShell_p);
+                NetShell* initNShell = new NetShell(ns3::Mac48Address::ConvertFrom(newReceiverDev->GetAddress()), neighbourId, logType, 0, 0, lShell_p);
                 auto p = this->createPacket(initNShell);
                 this->sendPacket(newReceiverDev, p);
             }
             this->communicationLogs[logType]->appendLogShell(nShell->shell->shell);
             LogShell tmp = this->communicationLogs[logType]->getLastEntry();
             LogShell* lShell_p = &tmp;
-            nShell = new NetShell(ns3::Mac48Address::ConvertFrom(newReceiverDev->GetAddress()), neighbourId, logType, 0, lShell_p);
+            nShell = new NetShell(ns3::Mac48Address::ConvertFrom(newReceiverDev->GetAddress()), neighbourId, logType, 0, 0, lShell_p);
 
             cout << "sending packets" << endl;
 
@@ -414,7 +413,7 @@ bool EthSwitch::forwardDeletion(NetShell *nShell) {
         log->appendLogShell(cShell);
         LogShell lShell = log->getLastEntry();
         LogShell* lShell_p = &lShell;
-        nShell = new NetShell(ns3::Mac48Address::ConvertFrom(dev->GetAddress()), subscriber, logType, 0, lShell_p);
+        nShell = new NetShell(ns3::Mac48Address::ConvertFrom(dev->GetAddress()), subscriber, logType, 0, 0, lShell_p);
         auto packet = this->createPacket(nShell);
         this->sendPacket(dev, packet);
     }

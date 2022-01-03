@@ -65,7 +65,7 @@ void User::subscribe(std::string authorId) {
         auto type = this->authorId + "/switch:*";
         this->communicationLogs[type]->appendLogShell(cShell);
         auto lShell = this->communicationLogs[type]->getLastEntry();
-        auto nShell = new NetShell(mac, authorId, type, 0, &lShell);
+        auto nShell = new NetShell(mac, authorId, type, 0, 0,&lShell);
         auto p = this->createPacket(nShell);
         this->sendPacket(item.second, p);
     }
@@ -76,7 +76,7 @@ void User::plugAndPlay() {
     ContentShell *cShell = new ContentShell("plugAndPlay",this->authorId,this->authorId + " plug and play");
     LogShell *logShell = new LogShell(0, "", this->authorId, cShell);
     string logName = this->authorId + "/switch:*";
-    NetShell *nShell = new NetShell(ns3::Mac48Address("FF:FF:FF:FF:FF:FF"),"127",logName,0,logShell);
+    NetShell *nShell = new NetShell(ns3::Mac48Address("FF:FF:FF:FF:FF:FF"),"127",logName,0, 0, logShell);
 //    this->logs.insert({logName, {"127", new CommunicationLog(this->authorId)}});
     this->communicationLogs.insert({logName, new CommunicationLog(this->authorId, SWITCH_ALL)});
     this->communicationLogs[logName]->addToLog(*logShell);
@@ -135,7 +135,7 @@ void User::pushLogToSwitch() {
 
     for (auto entry: this->neighbourMap) {
         NetShell *netShell = new NetShell(ns3::Mac48Address::ConvertFrom(entry.second->GetAddress()), entry.first,
-                                          this->authorId + "/user:*", 0, shell_p);
+                                          LOGTYPE(this->authorId, USER_ALL), 0, 0, shell_p);
         auto p = this->createPacket(netShell);
         this->sendPacket(entry.second, p);
     }
@@ -163,7 +163,7 @@ void User::unsubscribe(std::string authorId) {
         auto cShell = new ContentShell(UNSUBSCRIBE, authorId,"Unsubscribe the neighbourAuthor " + authorId);
         log->appendLogShell(cShell);
         auto lShell = log->getLastEntry();
-        auto nShell = new NetShell(mac, neighbourAuthor, type, 0, &lShell);
+        auto nShell = new NetShell(mac, neighbourAuthor, type, 0, 0, &lShell);
         auto p = this->createPacket(nShell);
         this->sendPacket(dev, p);
     }

@@ -121,13 +121,15 @@ struct NetShell : public Shell {
     string type;
     LogShell* shell;
     uint8_t hops;
+    uint8_t flag;
 
-    NetShell(ns3::Mac48Address mac, std::string receiverId, string type, uint8_t hops, LogShell* shell){
+    NetShell(ns3::Mac48Address mac, std::string receiverId, string type, uint8_t flag, uint8_t hops, LogShell* shell){
         this->macReceiver = mac;
         this->receiverId = receiverId;
         this->type = type;
         this->shell = shell;
         this->hops = hops;
+        this->flag = flag;
     }
 
     void accept(ExpressionVisitor* visitor) override {
@@ -212,13 +214,14 @@ struct SomeFunctions {
         auto receiverPair = varSplitter(tmp, "/");
         const char *bruh = receiverPair.first.c_str();
 
-        stringstream ssId(receiverPair.second);
-//        int receiverId;
-//        ssId >> receiverId;
+        stringstream ssFlag(m["flag"]);
+        int flag;
+        ssFlag >> flag;
         auto resultShell = new NetShell(
                 ns3::Mac48Address(bruh),
                 receiverPair.second,
                 m["type"],
+                flag,
                 hops,
                 lShellNew
         );

@@ -21,7 +21,7 @@ void Manager::sendNetworkJoinConfirmation(std::string authorId) {
     ContentShell *cShell = new ContentShell(ASSIGN_MANAGER, this->authorId, "Request confirmed. Network is joined.");
     LogShell *logShell =  new LogShell(-1, "prev", this->authorId, cShell);
 
-    NetShell* nShell = new NetShell(destinationMac, authorId, DIARY, 0, logShell);
+    NetShell* nShell = new NetShell(destinationMac, authorId, DIARY, 0, 0, logShell);
 
     Ptr <Packet> p = this->createPacket(nShell);
     this->sendPacket(nDev, p);
