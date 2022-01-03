@@ -17,6 +17,7 @@ public:
     void recvPkt(Ptr<NetDevice>, Ptr<const Packet>, uint16_t proto, const Address& from, const Address& to, NetDevice::PacketType pt);
     void joinNetwork();
     void subscribe(std::string authorId);
+    void unsubscribe(std::string authorId);
     void plugAndPlay();
     void printNetworkLog() override;
     void pushLogToSwitch();
@@ -40,6 +41,7 @@ public:
                     GetNode()->GetDevice(i)); //Register Event Handler to all Devices
         }
         this->plugAndPlay();
+        Simulator::ScheduleDestroy(&User::printNetworkLog, this);
     }
 
 

@@ -26,11 +26,13 @@ User::recvPkt(Ptr <NetDevice> dev, Ptr<const Packet> packet, uint16_t proto, con
             case ADD_SWITCH:
                 this->neighbourMap.insert(make_pair(nShell->shell->authorId, dev));
                 break;
+            case UPDATE_CONTENT_FROM:
+                this->concatenateEntry(nShell);
             default:
                 cout << "choking" << endl;
                 std::string senderId;
-
-                if(nShell->type != "user" + this->authorId + "/user*") {
+                // gossip answer
+                if(nShell->type != this->authorId + "/user:*") {
                     return;
                 }
 
@@ -54,15 +56,17 @@ User::recvPkt(Ptr <NetDevice> dev, Ptr<const Packet> packet, uint16_t proto, con
 void User::joinNetwork() {}
 
 void User::subscribe(std::string authorId) {
-    auto type = this->authorId + "/" + authorId;
+    this->subscriptions.push_back({authorId + "/user:*", new CommunicationLog(authorId, "user:*")});
+
     for (auto item : this->neighbourMap) {
+        auto neighbourId = item.first;
         auto mac = ns3::Mac48Address::ConvertFrom(item.second->GetAddress());
 
-        auto cShell = new ContentShell("getContentFrom", authorId,
-                                       "Subscribe the author " + authorId);
-        auto lShell = new LogShell(0, "", this->authorId, cShell);
-        this->logs.insert({type,{authorId, new CommunicationLog(this->authorId, authorId)}});
-        auto nShell = new NetShell(mac, authorId, type, 0, lShell);
+        auto cShell = new ContentShell("getContentFrom", authorId,"Subscribe the author " + authorId);
+        auto type = this->authorId + "/switch:*";
+        this->communicationLogs[type]->appendLogShell(cShell);
+        auto lShell = this->communicationLogs[type]->getLastEntry();
+        auto nShell = new NetShell(mac, authorId, type, 0, &lShell);
         auto p = this->createPacket(nShell);
         this->sendPacket(item.second, p);
     }
@@ -70,19 +74,13 @@ void User::subscribe(std::string authorId) {
 }
 
 void User::plugAndPlay() {
-    ContentShell *cShell = new ContentShell("plugAndPlay",
-                                            this->authorId,
-                                            this->authorId + " plug and play"
-    );
+    ContentShell *cShell = new ContentShell("plugAndPlay",this->authorId,this->authorId + " plug and play");
     LogShell *logShell = new LogShell(0, "", this->authorId, cShell);
     string logName = this->authorId + "/switch:*";
-    NetShell *nShell = new NetShell(
-            ns3::Mac48Address("FF:FF:FF:FF:FF:FF"),
-            "127",
-            logName,
-            0,
-            logShell);
-    this->logs.insert({logName, {"127", new CommunicationLog(this->authorId)}});
+    NetShell *nShell = new NetShell(ns3::Mac48Address("FF:FF:FF:FF:FF:FF"),"127",logName,0,logShell);
+//    this->logs.insert({logName, {"127", new CommunicationLog(this->authorId)}});
+    this->communicationLogs.insert({logName, new CommunicationLog(this->authorId)});
+    this->communicationLogs[logName]->addToLog(*logShell);
     for (uint32_t i = 0; i < GetNode()->GetNDevices(); ++i) {
         Ptr <Packet> p = this->createPacket(nShell);
         Ptr <NetDevice> dev = GetNode()->GetDevice(i);
@@ -96,8 +94,7 @@ void User::plugAndPlay() {
 void User::printNetworkLog() {
     ostringstream oss;
     Printer stringAssembler;
-/*
-    oss << "-------User " << to_string(this->authorId) << "-------" << endl;
+    oss << "-------User " << this->authorId << "-------" << endl;
     oss << "My Log: " << endl;
     for (auto lShell : this->myPersonalLog->getLog()) {
         stringAssembler.visit(&lShell);
@@ -106,18 +103,26 @@ void User::printNetworkLog() {
     }
     oss << "Connected Switches: " << endl;
     for (auto item : this->neighbourMap) {
-        oss << to_string(item.first) << endl;
+        oss << item.first << endl;
     }
-    oss << "Logs:" << endl;
-    for (auto item: this->subscriptions) {
+    for (auto item: this->communicationLogs) {
         oss << "Log of " << item.first << endl;
-        for (auto lShell: this->subscriptions[item.first]->getLog()) {
+        for (auto lShell: item.second->getLog()) {
             stringAssembler.visit(&lShell);
             oss << stringAssembler.str() << endl;
             stringAssembler.clearOss();
         }
     }
-    oss << "-----------------------" << endl;*/
+    oss << "Logs:" << endl;
+    for (auto item: this->subscriptions) {
+        oss << "Log of " << item.first << endl;
+        for (auto lShell: item.second->getLog()) {
+            stringAssembler.visit(&lShell);
+            oss << stringAssembler.str() << endl;
+            stringAssembler.clearOss();
+        }
+    }
+    oss << "-----------------------" << endl;
     cout << oss.str() << endl;
 }
 
@@ -144,5 +149,24 @@ bool User::processReceivedSwitchPacket(NetShell *netShell, Ptr <NetDevice> dev) 
 }
 
 void User::processReceivedUserPacket(NetShell *netShell, Ptr <NetDevice> dev) {
+
+}
+void User::unsubscribe(std::string authorId) {
+    for (auto item : this->neighbourMap) {
+        auto neighbourAuthor = item.first;
+        auto dev = item.second;
+        auto log = this->communicationLogs[neighbourAuthor];
+        auto type = LOGTYPE(log->getOwner(), log->getDedicated());
+
+        auto mac = ns3::Mac48Address::ConvertFrom(dev->GetAddress());
+
+        auto cShell = new ContentShell(UNSUBSCRIBE, authorId,"Unsubscribe the neighbourAuthor " + authorId);
+        log->appendLogShell(cShell);
+        auto lShell = log->getLastEntry();
+        auto nShell = new NetShell(mac, neighbourAuthor, type, 0, &lShell);
+        auto p = this->createPacket(nShell);
+        this->sendPacket(dev, p);
+    }
+    cout << "I am unsubscribing" << endl;
 
 }
