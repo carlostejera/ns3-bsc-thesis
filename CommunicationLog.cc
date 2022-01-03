@@ -133,5 +133,9 @@ const std::string & CommunicationLog::getOwner() const {
  * @param contentShell new content to append as LogShell
  */
 void CommunicationLog::appendLogShell(ContentShell* contentShell) {
-    this->log.push_back(LogShell(this->getCurrentSeqNum() + 1, this->createHash(this->getLastEntry()), this->owner, contentShell));
+    if (this->log.empty()) {
+        this->log.push_back(LogShell(this->getCurrentSeqNum() + 1, "", this->owner, contentShell));
+    } else {
+        this->log.push_back(LogShell(this->getCurrentSeqNum() + 1, this->createHash(this->getLastEntry()), this->owner, contentShell));
+    }
 }
