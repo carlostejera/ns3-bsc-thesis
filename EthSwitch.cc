@@ -196,9 +196,9 @@ void EthSwitch::recvPkt(
                     this->broadcastToNeighbours(dev, nShell);
                     this->packetOss << "& and forwarding request";
                     break;
-                case UNSUBSCRIBE:
+                case UNSUBSCRIBE_USER:
                     // handle unsubscription
-                    this->interestedNeighbours.erase()
+//                    this->interestedNeighbours.erase()
                     break;
                 default:
                     break;
