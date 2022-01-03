@@ -90,3 +90,6 @@ const std::string & CommunicationLog::getDedicated() const {
 const std::string & CommunicationLog::getOwner() const {
     return this->owner;
 }
+void CommunicationLog::appendLogShell(ContentShell* contentShell) {
+    this->log.push_back(LogShell(this->getCurrentSeqNum() + 1, this->createHash(this->getLastEntry()), this->owner, contentShell));
+}

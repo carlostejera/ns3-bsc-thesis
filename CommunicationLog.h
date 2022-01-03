@@ -43,6 +43,7 @@ class CommunicationLog {
     bool isSubsequentEntry(LogShell lShell);
     const std::string & getDedicated() const;
     const std::string & getOwner() const;
+    void appendLogShell(ContentShell* contentShell);
 };
 
 #endif
