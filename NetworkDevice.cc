@@ -139,7 +139,7 @@ bool NetworkDevice::concatenateEntry(NetShell* nShell) {
         // TODO: Maybe change
         this->logs.insert({nShell->type, {nShell->shell->authorId, new CommunicationLog(nShell->shell->authorId, "108")}});
         if (nShell->type.find(SWITCH_PREFIX) != string::npos && nShell->type.find(USER_PREFIX) != string::npos) {
-            this->communicationLogs.push_back({nShell->type,this->logs[nShell->type].second});
+            this->communicationLogs.insert({nShell->type,this->logs[nShell->type].second});
         } else {
             this->subscriptions.push_back({nShell->type, this->logs[nShell->type].second});
         }
@@ -190,4 +190,6 @@ bool NetworkDevice::isEntryConcatenated(NetShell* netShell) {
     this->packetOss << (result ? conc : drop);
     return result;
 }
-
+const std::string NetworkDevice::LOGTYPE(std::string writer, std::string reader) const {
+    return writer + "/" "reader";
+}

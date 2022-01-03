@@ -47,7 +47,7 @@ void Manager::broadcastLastNetworkChange(std::string exceptedReceiver ="-1") {
 bool Manager::concatenateEntry(NetShell* netShell) {
     if (!this->logExists(netShell)) {
         // TODO: Maybe change
-        this->communicationLogs.push_back({netShell->type, new CommunicationLog(netShell->shell->authorId, this->authorId)});
+        this->communicationLogs.insert({netShell->type, new CommunicationLog(netShell->shell->authorId, this->authorId)});
     }
     CommunicationLog* log = this->getLogFrom(netShell->type);
     string conc = "& concatenating entry " + to_string(netShell->shell->sequenceNum) + " to " + netShell->type + "\n";

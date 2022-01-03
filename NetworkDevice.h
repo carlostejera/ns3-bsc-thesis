@@ -17,7 +17,7 @@ protected:
     std::map<std::string, Ptr<NetDevice>> neighbourMap;
     std::string authorId;
     map<string, pair<std::string , CommunicationLog*>> logs;
-    vector<pair<string, CommunicationLog*>> communicationLogs;
+    map<string, CommunicationLog*> communicationLogs;
     vector<pair<string, CommunicationLog*>> subscriptions;
     CommunicationLog* myPersonalLog;
     string name;
@@ -41,6 +41,7 @@ protected:
     void printPacketResult();
     bool isGossipEntryOlder(NetShell* nShell);
     bool isEntryConcatenated(NetShell* netShell);
+    const std::string LOGTYPE(std::string writer, std::string reader) const;
 //    std::string type(std::string)
 
 //    bool isSubsequentContent();
