@@ -10,14 +10,14 @@ using namespace std;
  */
 
 void EthSwitch::requestJoiningNetwork() {
-    CommunicationLog* log = new CommunicationLog(this->authorId, "127");
+    CommunicationLog* log = new CommunicationLog(this->authorId, SWITCH_ALL);
 
-    ContentShell *cShell = new ContentShell("addToNetwork",this->authorId,this->authorId + " wants to join the network");
-    LogShell *logShell = new LogShell(0,"",this->authorId,cShell);
-
-    string commLog = this->authorId + "/manager:*";
-    NetShell *nShell = new NetShell(ns3::Mac48Address("FF:FF:FF:FF:FF:FF"),"127",commLog,0,logShell);
-    log->addToLog(*logShell);
+    ContentShell *cShell = new ContentShell(ADD_USER_TO_NETWORK,this->authorId,this->authorId + " wants to join the network");
+    log->appendLogShell(cShell);
+    LogShell lShell = log->getLastEntry();
+    LogShell* lShell_p = &lShell;
+    string commLog = LOGTYPE(this->authorId, MANAGER_ALL);
+    NetShell *nShell = new NetShell(ns3::Mac48Address("FF:FF:FF:FF:FF:FF"),MANAGER_ALL,commLog,0,lShell_p);
     this->logs.insert({commLog, {"127", log}});
     this->communicationLogs.insert({commLog, log});
     // Broadcast that the user wants to join the network (simulating via uni-cast)
@@ -151,7 +151,7 @@ void EthSwitch::recvPkt(
         const Address &from,
         const Address &to,
         NetDevice::PacketType pt) {
-
+    bool color = false;
 
     // Reads packet size and prepares the transformation of bytes to string
     string netShell = this->readPacket(packet);
@@ -207,6 +207,8 @@ void EthSwitch::recvPkt(
                 default:
                     break;
             }
+        } else {
+            color = true;
         }
 
     } else if (nShell->type.find("/user") != string::npos) {
@@ -218,9 +220,13 @@ void EthSwitch::recvPkt(
 
     this->packetOss << "----------------SwitchPacket_END----------------\n" << endl;
     if (VERBOSE) {
-        this->printPacketResult();
+        if(color) {
+            this->printBlack(this->packetOss.str());
+        } else {
+            this->printPacketResult();
+        }
     }
-    this->packetOss.clear();
+    this->packetOss.str("");
 }
 
 void EthSwitch::forward(Ptr<NetDevice> dev, NetShell* nShell, uint8_t hops) {
