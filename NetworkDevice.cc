@@ -205,4 +205,7 @@ void NetworkDevice::removeSubscription(std::string subscription) {
 bool NetworkDevice::isInCommunicationLog(std::string logType) {
     return this->communicationLogs.find(logType) != this->communicationLogs.end();
 }
+void NetworkDevice::printBlack(std::string output) {
+    cout << "\033[1;" << "31" << "m" << output << "\033[0m\n";
+}
 

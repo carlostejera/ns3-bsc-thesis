@@ -44,6 +44,7 @@ protected:
     const std::string LOGTYPE(std::string writer, std::string reader) const;
     void removeSubscription(std::string subscription);
     bool isInCommunicationLog(std::string logType);
+    void printBlack(std::string output);
 //    std::string type(std::string)
 
 //    bool isSubsequentContent();
