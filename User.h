@@ -29,7 +29,7 @@ public:
 
     User(std::string id, double errorRate) : Application() {
         this->authorId = USER_PREFIX + id;
-        this->myPersonalLog = new CommunicationLog(this->authorId);
+        this->myPersonalLog = new CommunicationLog(this->authorId, SWITCH_ALL);
     }
     virtual ~User() {}
 

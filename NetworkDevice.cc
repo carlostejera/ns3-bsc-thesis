@@ -95,14 +95,10 @@ void NetworkDevice::sendEntryFromIndexTo(CommunicationLog* log, std::string rece
     seqFrom = seqFrom == -1 ? 0 : seqFrom;
     auto receiverNetDevice = this->neighbourMap[receiverId];
     Printer p;
-    cout << "hihi" << endl;
     LogShell lShell = log->getLastEntry();
     LogShell* logShell_p = &lShell;
     p.visit(logShell_p);
-    cout << "check" << endl;
-    cout << receiverId << endl;
     auto receiverMac = ns3::Mac48Address::ConvertFrom(receiverNetDevice->GetAddress());
-    cout << "mate" << endl;
     for (int i = seqFrom; i <= log->getCurrentSeqNum(); i++) {
         auto lShell = log->getEntryAt(i);
         NetShell* nShell = new NetShell(receiverMac, receiverId, type, 0, &lShell);
@@ -138,12 +134,13 @@ bool NetworkDevice::concatenateEntry(NetShell* nShell) {
     if (!this->logExists(nShell)) {
         // TODO: Maybe change
         this->logs.insert({nShell->type, {nShell->shell->authorId, new CommunicationLog(nShell->shell->authorId, "108")}});
-        if (nShell->type.find(SWITCH_PREFIX) != string::npos && nShell->type.find(USER_PREFIX) != string::npos) {
-            this->communicationLogs.insert({nShell->type,this->logs[nShell->type].second});
-        } else {
+        if ((nShell->type.find(MANAGER_PREFIX) != string::npos && nShell->type.find(SWITCH_ALL) != string::npos)
+        || (nShell->type.find(USER_PREFIX) != string::npos && nShell->type.find(USER_ALL) != string::npos)
+        ) {
             this->subscriptions.push_back({nShell->type, this->logs[nShell->type].second});
+        } else {
+            this->communicationLogs.insert({nShell->type,this->logs[nShell->type].second});
         }
-        cout << "xdddddddddddddddddddd" << endl;
     }
 
     return this->isEntryConcatenated(nShell);
@@ -157,6 +154,7 @@ EnumFunctions NetworkDevice::hash(string input) {
     if (input == "addToNetwork") return ADD_TO_NETWORK;
     if (input == "getContentFrom") return GET_CONTENT_FROM;
     if (input == "pushContent") return UPDATE_CONTENT_FROM;
+    if (input == UNSUBSCRIBE) return UNSUBSCRIBE_USER;
     return NONE;
 }
 
@@ -191,5 +189,20 @@ bool NetworkDevice::isEntryConcatenated(NetShell* netShell) {
     return result;
 }
 const std::string NetworkDevice::LOGTYPE(std::string writer, std::string reader) const {
-    return writer + "/" "reader";
+    return writer + "/" + reader;
 }
+
+void NetworkDevice::removeSubscription(std::string subscription) {
+    for (auto it = this->subscriptions.begin(); it != this->subscriptions.end(); ++it) {
+        auto interested = it->first;
+        if (interested == LOGTYPE(subscription, USER_ALL)) {
+            this->subscriptions.erase(it);
+            break;
+
+        }
+    }
+}
+bool NetworkDevice::isInCommunicationLog(std::string logType) {
+    return this->communicationLogs.find(logType) != this->communicationLogs.end();
+}
+

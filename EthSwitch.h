@@ -26,6 +26,12 @@ struct EthSwitch : public Application, public NetworkDevice {
     void recvPkt(Ptr<NetDevice> dev, Ptr<const Packet> packet, uint16_t proto, const Address& from, const Address& to, NetDevice::PacketType pt );
     void requestJoiningNetwork();
     void sendPlugAndPlayConfirmation(Ptr<NetDevice> dev, std::string authorId);
+    void removeUserFromInl(std::string canceller,
+                           std::string subscription,
+                           NetShell *nShell,
+                           Ptr<NetDevice> dev);
+    bool interestExists(std::string subscription, std::string subscriber);
+    bool forwardDeletion(NetShell *nShell);
 
     EthSwitch(std::string authorId, double errorRate) {
         this->authorId = SWITCH_PREFIX + authorId;

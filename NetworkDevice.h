@@ -42,6 +42,8 @@ protected:
     bool isGossipEntryOlder(NetShell* nShell);
     bool isEntryConcatenated(NetShell* netShell);
     const std::string LOGTYPE(std::string writer, std::string reader) const;
+    void removeSubscription(std::string subscription);
+    bool isInCommunicationLog(std::string logType);
 //    std::string type(std::string)
 
 //    bool isSubsequentContent();

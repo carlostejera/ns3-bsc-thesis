@@ -49,6 +49,7 @@ static constexpr const char* MANAGER_RECEIVER = *("/") + MANAGER_PREFIX;
 static constexpr const char* SWITCH_RECEIVER = *("/") + SWITCH_PREFIX;
 static constexpr const char* USER_RECEIVER = *("/") + USER_PREFIX;
 static constexpr const char* USER_ALL = "user:*";
+static constexpr const char* SWITCH_ALL = "switch:*";
 
 
 struct ExpressionVisitor {

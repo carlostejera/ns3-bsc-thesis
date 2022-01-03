@@ -42,8 +42,8 @@ User::recvPkt(Ptr <NetDevice> dev, Ptr<const Packet> packet, uint16_t proto, con
                     }
                 }
                 cout << senderId << endl;
-                this->sendEntryFromIndexTo(this->myPersonalLog, senderId, nShell->shell->sequenceNum, "user" +
-                        this->authorId + "/user*");
+                this->sendEntryFromIndexTo(this->myPersonalLog, senderId, nShell->shell->sequenceNum,
+                                           LOGTYPE(authorId, USER_ALL));
                 break;
         }
     }
@@ -56,8 +56,7 @@ User::recvPkt(Ptr <NetDevice> dev, Ptr<const Packet> packet, uint16_t proto, con
 void User::joinNetwork() {}
 
 void User::subscribe(std::string authorId) {
-    this->subscriptions.push_back({authorId + "/user:*", new CommunicationLog(authorId, "user:*")});
-
+//    this->subscriptions.push_back({authorId + "/user:*", new CommunicationLog(authorId, "user:*")});
     for (auto item : this->neighbourMap) {
         auto neighbourId = item.first;
         auto mac = ns3::Mac48Address::ConvertFrom(item.second->GetAddress());
@@ -79,7 +78,7 @@ void User::plugAndPlay() {
     string logName = this->authorId + "/switch:*";
     NetShell *nShell = new NetShell(ns3::Mac48Address("FF:FF:FF:FF:FF:FF"),"127",logName,0,logShell);
 //    this->logs.insert({logName, {"127", new CommunicationLog(this->authorId)}});
-    this->communicationLogs.insert({logName, new CommunicationLog(this->authorId)});
+    this->communicationLogs.insert({logName, new CommunicationLog(this->authorId, SWITCH_ALL)});
     this->communicationLogs[logName]->addToLog(*logShell);
     for (uint32_t i = 0; i < GetNode()->GetNDevices(); ++i) {
         Ptr <Packet> p = this->createPacket(nShell);
@@ -155,9 +154,10 @@ void User::unsubscribe(std::string authorId) {
     for (auto item : this->neighbourMap) {
         auto neighbourAuthor = item.first;
         auto dev = item.second;
-        auto log = this->communicationLogs[neighbourAuthor];
+        for (auto i : this->communicationLogs) {
+        }
+        auto log = this->communicationLogs[LOGTYPE(this->authorId, SWITCH_ALL)];
         auto type = LOGTYPE(log->getOwner(), log->getDedicated());
-
         auto mac = ns3::Mac48Address::ConvertFrom(dev->GetAddress());
 
         auto cShell = new ContentShell(UNSUBSCRIBE, authorId,"Unsubscribe the neighbourAuthor " + authorId);
@@ -168,5 +168,6 @@ void User::unsubscribe(std::string authorId) {
         this->sendPacket(dev, p);
     }
     cout << "I am unsubscribing" << endl;
+    this->removeSubscription(authorId);
 
 }
