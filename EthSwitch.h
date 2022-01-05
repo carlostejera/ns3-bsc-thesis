@@ -32,9 +32,11 @@ struct EthSwitch : public Application, public NetworkDevice {
                            Ptr<NetDevice> dev);
     bool interestExists(std::string subscription, std::string subscriber);
     bool forwardDeletion(NetShell *nShell);
+    double gossipInterval;
 
-    EthSwitch(std::string authorId, double errorRate) {
+    EthSwitch(std::string authorId, double gossipInterval) {
         this->authorId = SWITCH_PREFIX + authorId;
+        this->gossipInterval = gossipInterval;
     }
     virtual ~EthSwitch() {}
     virtual void StartApplication(void) {
