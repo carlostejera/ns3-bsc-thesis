@@ -59,25 +59,15 @@ void NetworkDevice::printNetworkLog() {
     ostringstream oss;
     oss << "-----" << "Device ID: " << this->authorId << "-----" << endl;
     oss << "All the fucking logs: " << endl;
-/*
-    for (auto log : this->communicationLogs) {
-        oss << log.first << endl;
-        oss << log.second->getLogAsString() << endl;
-    }
-*/
 
     oss << this->logPacket.toString() << endl;
 
-/*    oss << "Communication logs:" << endl;
-    for (auto log : this->communicationLogs) {
-        oss << log.first << endl;
-        oss << log.second->getLogAsString() << endl;
-    }*/
-/*    oss << "Subscriptions:" << endl;
-    for (auto log : this->subscriptions) {
-        oss << log.first << endl;
-        oss << log.second->getLogAsString() << endl;
-    }*/
+    oss << "My personal log: " << endl;
+
+    if (this->myPersonalLog != nullptr){
+        oss << this->myPersonalLog->getLogAsString() << endl;
+    }
+
     oss << endl << "Neighbours: " << endl;
     for (auto iter = this->neighbourMap.begin(); iter != this->neighbourMap.end(); iter++) {
         auto authorId = iter->first;
