@@ -47,9 +47,10 @@ void Manager::broadcastLastNetworkChange(std::string exceptedReceiver ="-1") {
 bool Manager::concatenateEntry(NetShell* netShell) {
     if (!this->logExists(netShell)) {
         // TODO: Maybe change
-        this->communicationLogs.insert({netShell->type, new CommunicationLog(netShell->shell->authorId, this->authorId)});
+        this->logPacket.add(LogPacket(netShell->type, new CommunicationLog(netShell->shell->authorId, this->authorId), CommunicationType::NO_TYPE));
+//        this->communicationLogs.insert({netShell->type, new CommunicationLog(netShell->shell->authorId, this->authorId)});
     }
-    CommunicationLog* log = this->getLogFrom(netShell->type);
+    CommunicationLog* log = this->logPacket.getLogByWriterReader(netShell->type);
     string conc = "& concatenating entry " + to_string(netShell->shell->sequenceNum) + " to " + netShell->type + "\n";
     string drop = "& dropping packet, not matching subsequent entry\n";
     bool result = log->addToLog(*(netShell->shell));
@@ -80,7 +81,7 @@ void Manager::recvPkt(
     if (nShell->type.find(MANAGER_ALL) != string::npos && nShell->receiverId == MANAGER_ALL) {
         this->concatenateEntry(nShell);
 
-        auto lastEntry = this->getLogFrom(nShell->type)->getLastEntry();
+        auto lastEntry = this->logPacket.getLogByWriterReader(nShell->type)->getLastEntry();
         switch(this->hash(lastEntry.shell->function)) {
             case ADD_TO_NETWORK:
                 this->registerUser(dev, nShell->shell->authorId);
@@ -119,12 +120,4 @@ bool Manager::processReceivedSwitchPacket(NetShell *netShell, Ptr <NetDevice> de
 
 void Manager::processReceivedUserPacket(NetShell *netShell, Ptr <NetDevice> dev) {
 
-}
-CommunicationLog *Manager::getLogFrom(string type) {
-    for (auto l : this->communicationLogs) {
-        if (l.first == type) {
-            return l.second;
-        }
-    }
-    return NULL;
 }

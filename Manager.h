@@ -18,8 +18,6 @@ public:
     bool processReceivedSwitchPacket(NetShell* netShell, Ptr<NetDevice> dev) override;
     void processReceivedUserPacket(NetShell* netShell, Ptr<NetDevice> dev) override;
     bool concatenateEntry(NetShell* netShell);
-    CommunicationLog* getLogFrom(string type);
-
 
     Manager(std::string id, double errorRate) : Application() {
         this->authorId = MANAGER_PREFIX + id;
@@ -27,7 +25,7 @@ public:
 
         this->myPersonalLog = new CommunicationLog(this->authorId);
         this->myPersonalLog->initialiseLog();
-        this->subscriptions.push_back({this->myType, this->myPersonalLog});
+//        this->subscriptions.push_back({this->myType, this->myPersonalLog});
     }
     virtual ~Manager() {}
 

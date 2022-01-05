@@ -127,12 +127,12 @@ void lineTopology(const uint32_t userNumbers, const uint32_t switchNumbers, cons
     }
     Simulator::Schedule(Seconds(3), &User::subscribe, user_apps[0], "user:1");
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 10; i++) {
         Simulator::Schedule(Seconds(5), &User::pushLogToSwitch, user_apps[1]);
     }
 
-    Simulator::Schedule(Seconds(7), &User::unsubscribe, user_apps[0], "user:1");
-    Simulator::Stop(Seconds(8));
+//    Simulator::Schedule(Seconds(6), &User::unsubscribe, user_apps[0], "user:1");
+    Simulator::Stop(Seconds(6));
     Simulator::Run(); //run simulation
     Simulator::Destroy(); //end simulation
 
@@ -184,7 +184,7 @@ void p2pTopology(const double errorRate) {
 
 
     switch_apps[0]->SetStartTime(Seconds(1));
-    switch_apps[0]->SetStopTime(Seconds(20));
+    switch_apps[0]->SetStopTime(Seconds(100));
 
     Simulator::Run(); //run simulation
     Simulator::Destroy(); //end simulation
@@ -204,7 +204,7 @@ int main(int argc, char *argv[]) {
     Packet::EnableChecking();
 
     if (topology == "line") {
-        lineTopology(2, 5, 1, 0);
+        lineTopology(2, 2, 1, 0);
     } else if (topology == "p2p") {
         p2pTopology(0);
     }

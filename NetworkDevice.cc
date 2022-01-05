@@ -58,16 +58,26 @@ void NetworkDevice::printNetworkLog() {
     Printer stringAssembler;
     ostringstream oss;
     oss << "-----" << "Device ID: " << this->authorId << "-----" << endl;
-    oss << "Communication logs:" << endl;
+    oss << "All the fucking logs: " << endl;
+/*
     for (auto log : this->communicationLogs) {
         oss << log.first << endl;
         oss << log.second->getLogAsString() << endl;
     }
-    oss << "Subscriptions:" << endl;
+*/
+
+    oss << this->logPacket.toString() << endl;
+
+/*    oss << "Communication logs:" << endl;
+    for (auto log : this->communicationLogs) {
+        oss << log.first << endl;
+        oss << log.second->getLogAsString() << endl;
+    }*/
+/*    oss << "Subscriptions:" << endl;
     for (auto log : this->subscriptions) {
         oss << log.first << endl;
         oss << log.second->getLogAsString() << endl;
-    }
+    }*/
     oss << endl << "Neighbours: " << endl;
     for (auto iter = this->neighbourMap.begin(); iter != this->neighbourMap.end(); iter++) {
         auto authorId = iter->first;
@@ -126,21 +136,25 @@ int8_t NetworkDevice::convertStringToId(string id) {
     return authorId;
 }
 
+// TODO: remove
 bool NetworkDevice::logExists(NetShell* nShell) {
-    return this->logs.find(nShell->type) != this->logs.end();
+    return this->logPacket.exists(nShell->type);
 }
 
 bool NetworkDevice::concatenateEntry(NetShell* nShell) {
     if (!this->logExists(nShell)) {
         // TODO: Maybe change
-        this->logs.insert({nShell->type, {nShell->shell->authorId, new CommunicationLog(nShell->shell->authorId, "108")}});
-        if ((nShell->type.find(MANAGER_PREFIX) != string::npos && nShell->type.find(SWITCH_ALL) != string::npos)
+        auto comm = new CommunicationLog(nShell->shell->authorId, "108");
+        auto logType = nShell->type;
+        this->logPacket.add(LogPacket(nShell->type, comm, this->getCommType(logType)));
+//        auto log = this->logPacket.getLogByWriterReader(nShell->type);
+/*        if ((nShell->type.find(MANAGER_PREFIX) != string::npos && nShell->type.find(SWITCH_ALL) != string::npos)
         || (nShell->type.find(USER_PREFIX) != string::npos && nShell->type.find(USER_ALL) != string::npos)
         ) {
-            this->subscriptions.push_back({nShell->type, this->logs[nShell->type].second});
+            this->subscriptions.push_back({nShell->type,  log});
         } else {
-            this->communicationLogs.insert({nShell->type,this->logs[nShell->type].second});
-        }
+//            this->communicationLogs.insert({nShell->type, log});
+        }*/
     }
 
     return this->isEntryConcatenated(nShell);
@@ -178,10 +192,13 @@ void NetworkDevice::printPacketResult() {
 
 }
 bool NetworkDevice::isGossipEntryOlder(NetShell *nShell) {
-    return this->logs[nShell->type].second->getCurrentSeqNum() > nShell->shell->sequenceNum;
+    cout << "i am " << this->authorId << endl;
+    cout << nShell->type << endl;
+    // TODO: maybe an error
+    return this->logPacket.getLogByWriterReader(nShell->type)->getCurrentSeqNum() > nShell->shell->sequenceNum;
 }
 bool NetworkDevice::isEntryConcatenated(NetShell* netShell) {
-    CommunicationLog* l = this->logs[netShell->type].second;
+    CommunicationLog* l = this->logPacket.getLogByWriterReader(netShell->type);
     string conc = "& concatenating entry " + to_string(netShell->shell->sequenceNum) + " to " + netShell->type + "\n";
     string drop = "& dropping packet, not matching subsequent entry\n";
     bool result = l->addToLog(*(netShell->shell));
@@ -193,19 +210,38 @@ const std::string NetworkDevice::LOGTYPE(std::string writer, std::string reader)
 }
 
 void NetworkDevice::removeSubscription(std::string subscription) {
-    for (auto it = this->subscriptions.begin(); it != this->subscriptions.end(); ++it) {
+    cout << subscription << endl;
+    cout << subscription << endl;
+    cout << subscription << endl;
+    cout << subscription << endl;
+    cout << subscription << endl;
+    this->logPacket.remove(LOGTYPE(subscription, USER_ALL));
+   /* for (auto it = this->subscriptions.begin(); it != this->subscriptions.end(); ++it) {
         auto interested = it->first;
         if (interested == LOGTYPE(subscription, USER_ALL)) {
             this->subscriptions.erase(it);
             break;
 
         }
-    }
-}
-bool NetworkDevice::isInCommunicationLog(std::string logType) {
-    return this->communicationLogs.find(logType) != this->communicationLogs.end();
+    }*/
 }
 void NetworkDevice::printBlack(std::string output) {
     cout << "\033[1;" << "31" << "m" << output << "\033[0m\n";
+}
+bool NetworkDevice::subscriptionExists(std::string subscription) {
+   /* for (auto sub : this->subscriptions) {
+        auto logType = sub.first;
+        if (logType == subscription) {
+            return true;
+        }
+    }*/
+    return false;
+}
+CommunicationType NetworkDevice::getCommType(std::string type) {
+    if (type.find(SWITCH_ALL) != std::string::npos  && type.find(USER_PREFIX) != std::string::npos) return CommunicationType::P2P_COMM;
+    if (type.find(SWITCH_ALL) != std::string::npos  && type.find(MANAGER_PREFIX) != std::string::npos) return CommunicationType::SUBSCRIPTION;
+    if (type.find(USER_ALL) != std::string::npos) return CommunicationType::SUBSCRIPTION;
+    if (type.find(SWITCH_PREFIX) != std::string::npos && type.find(this->authorId) != std::string::npos) return SWITCH_SWITCH_COMM;
+    return NO_TYPE;
 }
 

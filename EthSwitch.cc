@@ -18,8 +18,8 @@ void EthSwitch::requestJoiningNetwork() {
     LogShell* lShell_p = &lShell;
     string commLog = LOGTYPE(this->authorId, MANAGER_ALL);
     NetShell *nShell = new NetShell(ns3::Mac48Address("FF:FF:FF:FF:FF:FF"),MANAGER_ALL,commLog,0, 0,lShell_p);
-    this->logs.insert({commLog, {"127", log}});
-    this->communicationLogs.insert({commLog, log});
+    this->logPacket.add(LogPacket(commLog, log, CommunicationType::P2P_COMM));
+//    this->communicationLogs.insert({commLog, log});
     // Broadcast that the user wants to join the network (simulating via uni-cast)
     for (uint32_t i = 0; i < GetNode()->GetNDevices(); ++i) {
         Ptr <Packet> p = this->createPacket(nShell);
@@ -83,9 +83,8 @@ void EthSwitch::sendPlugAndPlayConfirmation(Ptr<NetDevice> dev, std::string auth
     string logName = this->authorId + "/" + authorId;
     CommunicationLog* cLog = new CommunicationLog(this->authorId, authorId);
     cLog->addToLog(*log);
-
-    this->logs.insert({logName, {authorId, cLog}});
-    LogShell tmp = this->logs[logName].second->getLastEntry();
+    this->logPacket.add(LogPacket(logName, cLog, CommunicationType::P2P_COMM));
+    LogShell tmp = this->logPacket.getLogByWriterReader(logName)->getLastEntry();
 
     this->connectedUser.push_back(authorId);
 
@@ -116,9 +115,11 @@ void EthSwitch::gossip() {
     } while (randomLogType.find("switch:" + to_string(this->authorId) + "/") != string::npos);
 
     auto log = this->logs[randomLogType].second;*/
-    auto number =  rand() % this->subscriptions.size();
-    auto randomLogType = this->subscriptions[number].first;
-    auto log = this->subscriptions[number].second;
+    LogList subscriptionLogList = this->logPacket.getLogPacketsWithType(CommunicationType::SUBSCRIPTION);
+    auto number =  rand() % subscriptionLogList.size();
+    auto logPacket = subscriptionLogList.getLogPacketAt(number);
+    auto randomLogType = logPacket.getWriterReader();
+    auto log = logPacket.getLog();
     NetShell* nShell;
 
     for (auto entry : this->neighbourMap) {
@@ -174,49 +175,52 @@ void EthSwitch::recvPkt(
     this->packetOss << "Result: ";
 
     // Checks if it is the receiver
-    if (nShell->type.find("/manager") != string::npos) {
-        this->packetOss << "Dropping packet" << endl;
+    if (true) {
+        if (nShell->type.find("/manager") != string::npos) {
+            this->packetOss << "Dropping packet" << endl;
 
-    } else if (nShell->type.find("/switch:") != string::npos) {
-        if (this->processReceivedSwitchPacket(nShell, dev)) {
-            auto lastEntry = this->logs[nShell->type].second->getLastEntry();
-            //Dropping packet if this switch is not the receiver
-            CommunicationLog* cLog;
-            pair<std::string, std::string> receiver;
-            switch (this->hash(lastEntry.shell->function)) {
-                case ADD_MEMBER_TO_NETWORK:
-                    this->addMemberToNetwork(lastEntry.shell->params);
-                    break;
-                case PLUG_AND_PLAY:this->sendPlugAndPlayConfirmation(dev, nShell->shell->authorId);
-                    break;
-                case GET_CONTENT_FROM:
-                    // Somebody is interested in a log, so am I
-                    receiver = SomeFunctions::varSplitter(nShell->receiverId, "/");
-                    this->interestedNeighbours.insert({nShell->shell->shell->params, this->getKeyByValue(dev)});
-                    nShell->type = this->authorId + "/" + nShell->shell->shell->params;
-                    cLog = new CommunicationLog(this->authorId, nShell->shell->shell->params);
-                    cLog->addToLog(*nShell->shell);
-                    this->logs.insert({nShell->type, {nShell->shell->shell->params, cLog}});
-                    this->broadcastToNeighbours(dev, nShell);
-                    this->packetOss << "& and forwarding request";
-                    break;
-                case UNSUBSCRIBE_USER:
-                    // handle unsubscription
-                    this->removeUserFromInl(nShell->shell->authorId, nShell->shell->shell->params, nShell, dev);
-                    break;
-                default:
-                    break;
+        } else if (nShell->type.find("/switch:") != string::npos) {
+            if (this->processReceivedSwitchPacket(nShell, dev)) {
+                auto lastEntry = this->logPacket.getLogByWriterReader(nShell->type)->getLastEntry();
+                //Dropping packet if this switch is not the receiver
+                CommunicationLog *cLog;
+                switch (this->hash(lastEntry.shell->function)) {
+                    case ADD_MEMBER_TO_NETWORK:this->addMemberToNetwork(lastEntry.shell->params);
+                        break;
+                    case PLUG_AND_PLAY:this->sendPlugAndPlayConfirmation(dev, nShell->shell->authorId);
+                        break;
+                    case GET_CONTENT_FROM:
+                        // Somebody is interested in a log, so am I
+                        this->interestedNeighbours.insert({nShell->shell->shell->params, this->getKeyByValue(dev)});
+                        nShell->type = this->authorId + "/" + nShell->shell->shell->params;
+                        cLog = new CommunicationLog(this->authorId, nShell->shell->shell->params);
+                        cLog->addToLog(*nShell->shell);
+                        this->broadcastToNeighbours(dev, nShell);
+                        this->packetOss << "& and forwarding request";
+                        break;
+                    case UNSUBSCRIBE_USER:
+                        // handle unsubscription
+                        this->removeUserFromInl(nShell->shell->authorId, nShell->shell->shell->params, nShell, dev);
+                        break;
+                    default:break;
+                }
+            } else {
             }
+
+        } else if (nShell->type.find("/user") != string::npos) {
+            this->processReceivedUserPacket(nShell, dev);
+
         } else {
+            this->packetOss << "Dropping unknown packet";
         }
-
-    } else if (nShell->type.find("/user") != string::npos) {
-        this->processReceivedUserPacket(nShell, dev);
-
     } else {
-        this->packetOss << "Dropping unknown packet";
+        // Gossip answer
+/*        if (this->subscriptionExists(nShell->type) && this->isGossipEntryOlder(nShell)) {
+            this->sendEntryFromIndexTo(this->getLogFrom(nShell->type), this->getKeyByValue(dev),
+                                       nShell->shell->sequenceNum, nShell->type);
+            this->packetOss << "Answering to gossip" << endl;
+        }*/
     }
-
     this->packetOss << "----------------SwitchPacket_END----------------\n" << endl;
     if (VERBOSE) {
         if(nShell->flag == 1) {
@@ -243,7 +247,9 @@ void EthSwitch::forward(Ptr<NetDevice> dev, NetShell* nShell, uint8_t hops) {
 bool EthSwitch::processReceivedSwitchPacket(NetShell *nShell, Ptr <NetDevice> dev) {
     // Check if receiver
     auto shellParam = nShell->shell->shell->params;
-    if (this->isNeighbour(shellParam) && this->hash(nShell->shell->shell->function) == GET_CONTENT_FROM) {
+    if ((this->isNeighbour(shellParam) && this->hash(nShell->shell->shell->function) == GET_CONTENT_FROM)
+    || (this->logPacket.exists(LOGTYPE(shellParam, USER_ALL)))
+    ) {
         this->concatenateEntry(nShell);
         this->interestedNeighbours.insert({shellParam, nShell->shell->authorId});
         cout << "he is here" << endl;
@@ -275,32 +281,44 @@ void EthSwitch::processReceivedUserPacket(NetShell *nShell, Ptr <NetDevice> dev)
 //    std::string& shellType = nShell->type;
 
     // Switches/Users need the content of a user
-    if (this->hash(shellFunction) == GET_CONTENT_FROM) {
-        auto p = SomeFunctions::varSplitter(nShell->type, "/");
+    if (nShell->flag == 0) {
+        if (this->hash(shellFunction) == GET_CONTENT_FROM) {
+            auto p = SomeFunctions::varSplitter(nShell->type, "/");
 
-        this->interestedNeighbours.insert({p.second, this->getKeyByValue(dev)});
-        // Target is here
-        if (this->isNeighbour(shellParam) || this->logs.find(LOGTYPE(shellParam, USER_ALL)) != this->logs.end()) {
-            cout << "he is here" << endl;
-            auto toSubscribe = LOGTYPE(shellParam, USER_ALL);
-            cout << shellParam << endl;
-            cout << "i am " << this->authorId << endl;
-            cout << toSubscribe << endl;
-            this->sendEntryFromIndexTo(this->getLogFrom(toSubscribe), this->getKeyByValue(dev), 0, toSubscribe);
-        } else {
-            // Somebody is interested in a log, so am I
-            this->broadcastToNeighbours(dev, nShell);
-            this->packetOss << "& and forwarding request";
-        }
-
-
-    } else if (this->hash(shellFunction) == UPDATE_CONTENT_FROM) { // User pushes content to switch
-        if(this->concatenateEntry(nShell)) { // If new entry gets concatenated, then push to the subscribers
-            cout << this->getKeyByValue(dev) << endl;
-            if (!this->interestExists(nShell->shell->authorId, this->getKeyByValue(dev))) {
-                this->interestedNeighbours.insert({nShell->shell->authorId, this->getKeyByValue(dev)});
+            this->interestedNeighbours.insert({p.second, this->getKeyByValue(dev)});
+            // Target is here
+            if (this->isNeighbour(shellParam) || this->logPacket.exists(LOGTYPE(shellParam, USER_ALL))) {
+                cout << "he is here" << endl;
+                cout << "XDDDDDDDDDDDDDDDDDDDDD" << endl;
+                cout << "XDDDDDDDDDDDDDDDDDDDDD" << endl;
+                cout << "XDDDDDDDDDDDDDDDDDDDDD" << endl;
+                cout << "XDDDDDDDDDDDDDDDDDDDDD" << endl;
+                cout << "XDDDDDDDDDDDDDDDDDDDDD" << endl;
+                cout << "XDDDDDDDDDDDDDDDDDDDDD" << endl;
+                cout << "XDDDDDDDDDDDDDDDDDDDDD" << endl;
+                cout << "XDDDDDDDDDDDDDDDDDDDDD" << endl;
+                cout << "XDDDDDDDDDDDDDDDDDDDDD" << endl;
+                auto toSubscribe = LOGTYPE(shellParam, USER_ALL);
+                cout << shellParam << endl;
+                cout << "i am " << this->authorId << endl;
+                cout << toSubscribe << endl;
+                this->sendEntryFromIndexTo(this->getLogFrom(toSubscribe), this->getKeyByValue(dev), 0, toSubscribe);
+            } else {
+                // Somebody is interested in a log, so am I
+                this->broadcastToNeighbours(dev, nShell);
+                this->packetOss << "& and forwarding request";
             }
-            this->forward(dev, nShell, ++nShell->hops);
+
+        } else if (this->hash(shellFunction) == UPDATE_CONTENT_FROM) { // User pushes content to switch
+            if (this->concatenateEntry(nShell)) { // If new entry gets concatenated, then push to the subscribers
+                cout << this->getKeyByValue(dev) << endl;
+
+                // If no interest exist yet, create one for the sender (dev)
+                if (!this->interestExists(this->authorId, this->getKeyByValue(dev))) {
+                    this->interestedNeighbours.insert({this->authorId, this->getKeyByValue(dev)});
+                }
+                this->forward(dev, nShell, ++nShell->hops);
+            }
         }
     } else {
         if(this->logExists(nShell)) {
@@ -314,23 +332,30 @@ void EthSwitch::processReceivedUserPacket(NetShell *nShell, Ptr <NetDevice> dev)
 }
 
 void EthSwitch::broadcastToNeighbours(Ptr <NetDevice> dev, NetShell *nShell) {
+    cout << "what the fck" << endl;
     for (auto entry : this->neighbourMap) {
+        cout << "check" << endl;
+        cout << entry.first << endl;
         auto neighbourId = entry.first;
         auto newReceiverDev = entry.second;
         auto logType = LOGTYPE(this->authorId, neighbourId);
 
         if (entry.second != dev && neighbourId != this->manager.first) {
-            if(!this->isInCommunicationLog(logType)) {
-                this->communicationLogs.insert({logType, new CommunicationLog(this->authorId, neighbourId)});
-                this->communicationLogs[logType]->initialiseLog();
-                LogShell tmp = this->communicationLogs[logType]->getLastEntry();
+            if(!this->logPacket.exists(logType)) {
+                auto cLog = new CommunicationLog(this->authorId, neighbourId);
+                cLog->initialiseLog();
+                this->logPacket.add(LogPacket(logType, cLog, CommunicationType::SWITCH_SWITCH_COMM));
+                cout << "halllooooo creating" << logType << endl;
+//                this->communicationLogs.insert({logType, cLog});
+//                this->communicationLogs[logType]->initialiseLog();
+                LogShell tmp = this->logPacket.getLogByWriterReader(logType)->getLastEntry();
                 LogShell* lShell_p = &tmp;
                 NetShell* initNShell = new NetShell(ns3::Mac48Address::ConvertFrom(newReceiverDev->GetAddress()), neighbourId, logType, 0, 0, lShell_p);
                 auto p = this->createPacket(initNShell);
                 this->sendPacket(newReceiverDev, p);
             }
-            this->communicationLogs[logType]->appendLogShell(nShell->shell->shell);
-            LogShell tmp = this->communicationLogs[logType]->getLastEntry();
+            this->logPacket.getLogByWriterReader(logType)->appendLogShell(nShell->shell->shell);
+            LogShell tmp = this->logPacket.getLogByWriterReader(logType)->getLastEntry();
             LogShell* lShell_p = &tmp;
             nShell = new NetShell(ns3::Mac48Address::ConvertFrom(newReceiverDev->GetAddress()), neighbourId, logType, 0, 0, lShell_p);
 
@@ -343,12 +368,8 @@ void EthSwitch::broadcastToNeighbours(Ptr <NetDevice> dev, NetShell *nShell) {
 }
 
 CommunicationLog *EthSwitch::getLogFrom(string type) {
-    for (auto l : this->subscriptions) {
-        if (l.first == type) {
-            return l.second;
-        }
-    }
-    return NULL;
+
+    return this->logPacket.getLogByWriterReader(type);
 }
 void EthSwitch::removeUserFromInl(std::string canceller,
                                   std::string subscription,
@@ -408,7 +429,7 @@ bool EthSwitch::forwardDeletion(NetShell *nShell) {
             continue;
         }
         auto logType = LOGTYPE(this->authorId, subscriber);
-        auto log = this->communicationLogs[logType];
+        auto log = this->logPacket.getLogByWriterReader(logType);
         auto dev = this->neighbourMap[subscriber];
         log->appendLogShell(cShell);
         LogShell lShell = log->getLastEntry();
