@@ -9,14 +9,13 @@ void Manager::registerUser(Ptr<NetDevice> dev, std::string authorId) {
     oss << "New member arrived. Add " << authorId << " to member list";
     this->neighbourMap.insert(make_pair(authorId, dev));
     this->familyMembers.push_back(authorId);
-    this->myPersonalLog->addToLog(LogShell(this->myPersonalLog->getCurrentSeqNum() + 1, this->myPersonalLog->createHash(this->myPersonalLog->getLastEntry()), this->authorId,
-                                        new ContentShell(ADD_MEMBER, authorId, oss.str())));
+    this->myPersonalLog->appendLogShell(new ContentShell(ADD_MEMBER, authorId, oss.str()));
     this->currSeq++;
 }
 
 void Manager::sendNetworkJoinConfirmation(std::string authorId) {
     // Sends a confirmation to the join requester and also all necessary entries to reconstruct the current network
-    Ptr<NetDevice> nDev = this->neighbourMap[authorId];
+/*    Ptr<NetDevice> nDev = this->neighbourMap[authorId];
     auto destinationMac = ns3::Mac48Address::ConvertFrom(nDev->GetAddress());
     ContentShell *cShell = new ContentShell(ASSIGN_MANAGER, this->authorId, "Request confirmed. Network is joined.");
     LogShell *logShell =  new LogShell(-1, "prev", this->authorId, cShell);
@@ -24,7 +23,7 @@ void Manager::sendNetworkJoinConfirmation(std::string authorId) {
     NetShell* nShell = new NetShell(destinationMac, authorId, DIARY, 0, 0, logShell);
 
     Ptr <Packet> p = this->createPacket(nShell);
-    this->sendPacket(nDev, p);
+    this->sendPacket(nDev, p);*/
 }
 
 void Manager::broadcastLastNetworkChange(std::string exceptedReceiver ="-1") {

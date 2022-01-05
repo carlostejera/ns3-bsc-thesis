@@ -15,7 +15,8 @@ void Printer::visit(LogShell *lShell) {
     oss
             << "lShell=(author=" << lShell->authorId
             << "|seq=" << to_string(lShell->sequenceNum)
-            << "|prevHash=" << lShell->prevEventHash << "|";
+            << "|prevHash=" << lShell->prevEventHash
+            << "|timestamp=" << lShell->timestamp << "|";
     lShell->shell->accept(this);
     oss << ")";
 
@@ -24,7 +25,8 @@ void Printer::visit(LogShell *lShell) {
 
 void Printer::visit(NetShell *nShell) {
     oss
-    << "nShell=(receiver=" << nShell->macReceiver << "/" << nShell->receiverId
+    << "nShell=(timestamp=" << nShell->timestamp
+    << "|receiver=" << nShell->macReceiver << "/" << nShell->receiverId
     << "|type=" << nShell->type
     << "|flag=" << to_string(nShell->flag)
     << "|hops=" <<  to_string(nShell->hops) << "|";

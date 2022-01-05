@@ -70,19 +70,9 @@ void EthSwitch::printNetworkLog() {
  * @param authorId
  */
 void EthSwitch::sendPlugAndPlayConfirmation(Ptr<NetDevice> dev, std::string authorId) {
-    LogShell* log = new LogShell(
-            0,
-            "",
-            this->authorId,
-            new ContentShell(
-                    "addSwitch",
-                    this->authorId,
-                    "Add switch to the connected list"
-            ));
-
     string logName = this->authorId + "/" + authorId;
     CommunicationLog* cLog = new CommunicationLog(this->authorId, authorId);
-    cLog->addToLog(*log);
+    cLog->appendLogShell(new ContentShell("addSwitch",this->authorId,"Add switch to the connected list"));
     this->logPacket.add(LogPacket(logName, cLog, CommunicationType::P2P_COMM));
     LogShell tmp = this->logPacket.getLogByWriterReader(logName)->getLastEntry();
 
@@ -104,17 +94,6 @@ void EthSwitch::sendPlugAndPlayConfirmation(Ptr<NetDevice> dev, std::string auth
 void EthSwitch::gossip() {
 
     // Choose a random log to gossip about
-/*    do {
-        if (count == 10) {
-            return;
-        }
-        map<string, pair<int8_t , CommunicationLog*>>::iterator item = this->logs.begin();
-        advance(item, rand() % this->logs.size());
-        randomLogType = item->first;
-        count++;
-    } while (randomLogType.find("switch:" + to_string(this->authorId) + "/") != string::npos);
-
-    auto log = this->logs[randomLogType].second;*/
     LogList subscriptionLogList = this->logPacket.getLogPacketsWithType(CommunicationType::SUBSCRIPTION);
     auto number =  rand() % subscriptionLogList.size();
     auto logPacket = subscriptionLogList.getLogPacketAt(number);
@@ -125,7 +104,7 @@ void EthSwitch::gossip() {
     for (auto entry : this->neighbourMap) {
         if (log->getLog().empty()) { // If the chosen log is empty, tell that your neighbours with a fake log entry to get help
             auto cShell = new ContentShell("f", "p", "I have no content");
-            auto lShell = new LogShell(-1, "", this->manager.first, cShell);
+            auto lShell = new LogShell(to_string(Simulator::Now().GetMicroSeconds()), -1, "", this->manager.first, cShell);
             nShell = new NetShell(Mac48Address::ConvertFrom(entry.second->GetAddress()), entry.first, randomLogType, 1, 0, lShell);
 //            if (entry.first != this->manager.first) {
                 auto packet = this->createPacket(nShell);
@@ -141,7 +120,8 @@ void EthSwitch::gossip() {
 //            }
         }
     }
-    Simulator::Schedule(Seconds(5), &EthSwitch::gossip, this);
+    // This will be triggered <gossipInterval> seconds later
+    Simulator::Schedule(Seconds(this->gossipInterval), &EthSwitch::gossip, this);
 }
 
 
@@ -270,7 +250,7 @@ bool EthSwitch::processReceivedSwitchPacket(NetShell *nShell, Ptr <NetDevice> de
     }
     if (nShell->type.find("manager") != string::npos && nShell->receiverId == this->authorId && !this->isManagerAssigned) {
         this->assignManager(dev, nShell->shell->authorId);
-        Simulator::Schedule(Seconds(5), &EthSwitch::gossip, this);
+        Simulator::Schedule(Seconds(this->gossipInterval), &EthSwitch::gossip, this);
     }
     return this->concatenateEntry(nShell);
 }

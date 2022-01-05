@@ -72,14 +72,18 @@ void User::subscribe(std::string authorId) {
 }
 
 void User::plugAndPlay() {
-    ContentShell *cShell = new ContentShell("plugAndPlay",this->authorId,this->authorId + " plug and play");
-    LogShell *logShell = new LogShell(0, "", this->authorId, cShell);
-    string logName = this->authorId + "/switch:*";
-    NetShell *nShell = new NetShell(ns3::Mac48Address("FF:FF:FF:FF:FF:FF"),"127",logName,0, 0, logShell);
-//    this->logs.insert({logName, {"127", new CommunicationLog(this->authorId)}});
     auto comm = new CommunicationLog(this->authorId, SWITCH_ALL);
+
+    ContentShell *cShell = new ContentShell("plugAndPlay",this->authorId,this->authorId + " plug and play");
+    comm->appendLogShell(cShell);
+
+    string logName = this->authorId + "/switch:*";
     this->logPacket.add(LogPacket(logName, comm, CommunicationType::P2P_COMM));
-    this->logPacket.getLogByWriterReader(logName)->addToLog(*logShell);
+
+    auto logShell = this->logPacket.getLogByWriterReader(logName)->getLastEntry();
+    LogShell* lShell_p = &logShell;
+    NetShell *nShell = new NetShell(ns3::Mac48Address("FF:FF:FF:FF:FF:FF"),SWITCH_ALL,logName,0, 0, lShell_p);
+
     for (uint32_t i = 0; i < GetNode()->GetNDevices(); ++i) {
         Ptr <Packet> p = this->createPacket(nShell);
         Ptr <NetDevice> dev = GetNode()->GetDevice(i);
@@ -111,8 +115,7 @@ void User::printNetworkLog() {
 
 
 void User::pushLogToSwitch() {
-    this->myPersonalLog->addToLog(LogShell(this->count, this->myPersonalLog->getLog().empty() ? "" : this->myPersonalLog->createHash(this->myPersonalLog->getLastEntry()), this->authorId, new ContentShell("pushContent", "", "this is my log " +
-            to_string(this->count))));
+    this->myPersonalLog->appendLogShell(new ContentShell("pushContent", "", "this is my log " + to_string(this->count)));
     this->count += 1;
     LogShell lShell = this->myPersonalLog->getLastEntry();
     LogShell *shell_p = &lShell;

@@ -20,7 +20,8 @@ bool CommunicationLog::addToLog(LogShell shell) {
  * Initialises a log with a first entry to avoid correctness problems
  */
 void CommunicationLog::initialiseLog() {
-    this->addToLog(LogShell(0, "", this->owner, new ContentShell("", "", "Log initialised")));
+    this->appendLogShell(new ContentShell("", "", "Log initialised"));
+//    this->addToLog(LogShell(0, "", this->owner, new ContentShell("", "", "Log initialised")));
 }
 
 /**
@@ -133,9 +134,9 @@ const std::string & CommunicationLog::getOwner() const {
  * @param contentShell new content to append as LogShell
  */
 void CommunicationLog::appendLogShell(ContentShell* contentShell) {
-    if (this->log.empty()) {
-        this->log.push_back(LogShell(this->getCurrentSeqNum() + 1, "", this->owner, contentShell));
-    } else {
-        this->log.push_back(LogShell(this->getCurrentSeqNum() + 1, this->createHash(this->getLastEntry()), this->owner, contentShell));
-    }
+    auto hash = this->log.empty() ? "" : this->createHash(this->getLastEntry());
+    this->log.push_back(LogShell(to_string(Simulator::Now().GetNanoSeconds()), this->getCurrentSeqNum() + 1, hash, this->owner, contentShell));
+}
+bool CommunicationLog::empty() {
+    return this->log.empty();
 }
