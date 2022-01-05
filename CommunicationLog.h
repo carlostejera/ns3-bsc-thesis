@@ -44,6 +44,7 @@ class CommunicationLog {
     const std::string & getDedicated() const;
     const std::string & getOwner() const;
     void appendLogShell(ContentShell* contentShell);
+    bool empty();
 };
 
 #endif
