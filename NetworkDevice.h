@@ -19,7 +19,7 @@ protected:
     std::string authorId;
     LogList logPacket;
     vector<pair<string, CommunicationLog*>> subscriptions;
-    CommunicationLog* myPersonalLog;
+    CommunicationLog* myPersonalLog = nullptr;
     string name;
 
 
