@@ -217,6 +217,9 @@ void EthSwitch::forward(Ptr<NetDevice> dev, NetShell* nShell, uint8_t hops) {
     auto p = SomeFunctions::varSplitter(nShell->type, "/");
     pair<MMAPIterator, MMAPIterator> result = this->interestedNeighbours.equal_range(p.first);
     for (MMAPIterator it = result.first; it != result.second; it++) {
+        if (it->second == this->authorId) {
+            continue;
+        }
         dev = this->neighbourMap[it->second];
         nShell->receiverId = it->second;
         auto p = this->createPacket(nShell);
@@ -294,8 +297,8 @@ void EthSwitch::processReceivedUserPacket(NetShell *nShell, Ptr <NetDevice> dev)
                 cout << this->getKeyByValue(dev) << endl;
 
                 // If no interest exist yet, create one for the sender (dev)
-                if (!this->interestExists(this->authorId, this->getKeyByValue(dev))) {
-                    this->interestedNeighbours.insert({this->authorId, this->getKeyByValue(dev)});
+                if (!this->interestExists(nShell->shell->authorId, this->getKeyByValue(dev))) {
+                    this->interestedNeighbours.insert({nShell->shell->authorId, this->getKeyByValue(dev)});
                 }
                 this->forward(dev, nShell, ++nShell->hops);
             }
