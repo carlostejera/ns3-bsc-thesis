@@ -90,21 +90,23 @@ struct ContentShell : public Shell {
 };
 
 struct LogShell : public Shell {
-    int8_t sequenceNum = 0;
+    int16_t sequenceNum = 0;
     string prevEventHash;
     std::string authorId;
     ContentShell* shell;
     std::string timestamp;
+    std::string signature;
 //    static long globalHash = 100000;
     long myHash; 
 
 
-    LogShell(std::string timestamp, int8_t seqNum, string prevHash, std::string authorId, ContentShell* shell) :
+    LogShell(std::string timestamp, int16_t seqNum, string prevHash, std::string authorId, std::string signature, ContentShell* shell) :
             sequenceNum(seqNum),
             prevEventHash(prevHash),
             authorId(authorId),
             shell(shell),
-            timestamp(timestamp)
+            timestamp(timestamp),
+            signature(signature)
     {
         //TODO: Add event checker with the global hash
 //        this->myHash = globalHash;
@@ -125,7 +127,7 @@ struct NetShell : public Shell {
     uint8_t flag;
     std::string timestamp;
 
-    NetShell(ns3::Mac48Address mac, std::string receiverId, string type, uint8_t flag, uint8_t hops, LogShell* shell, std::string timestamp = to_string(Simulator::Now().GetMicroSeconds())){
+    NetShell(ns3::Mac48Address mac, std::string receiverId, string type, uint8_t flag, uint8_t hops, LogShell* shell, std::string timestamp = to_string(Simulator::Now().GetSeconds())){
         this->timestamp = timestamp;
         this->macReceiver = mac;
         this->receiverId = receiverId;
@@ -207,6 +209,7 @@ struct SomeFunctions {
                 seq,
                 m["prevHash"],
                 m["author"],
+                m["signature"],
                 cShellNew
         );
         auto netShellParams = nShellContent.erase(nShellContent.find(L_SHELL));

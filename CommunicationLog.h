@@ -35,7 +35,7 @@ class CommunicationLog {
     bool addToLog( LogShell shell);
     LogShell getLastEntry();
     LogShell getEntryAt(int entryNum);
-    int8_t getCurrentSeqNum();
+    int16_t getCurrentSeqNum();
     int getLogsSize();
     vector<LogShell> getLog();
     string getLogAsString();

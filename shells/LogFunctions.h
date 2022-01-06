@@ -16,7 +16,8 @@ void Printer::visit(LogShell *lShell) {
             << "lShell=(author=" << lShell->authorId
             << "|seq=" << to_string(lShell->sequenceNum)
             << "|prevHash=" << lShell->prevEventHash
-            << "|timestamp=" << lShell->timestamp << "|";
+            << "|timestamp=" << lShell->timestamp
+            << "|signature=" << lShell->signature << "|";
     lShell->shell->accept(this);
     oss << ")";
 

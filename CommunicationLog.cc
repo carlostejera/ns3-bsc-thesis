@@ -43,7 +43,7 @@ LogShell CommunicationLog::getEntryAt(int entryNum) {
  * Get current sequence number. If the log is yet empty, it returns -1.
  * @return sequence number
  */
-int8_t CommunicationLog::getCurrentSeqNum() {
+int16_t CommunicationLog::getCurrentSeqNum() {
     return this->log.empty() ? -1 : this->getLastEntry().sequenceNum;
 }
 /**
@@ -135,7 +135,7 @@ const std::string & CommunicationLog::getOwner() const {
  */
 void CommunicationLog::appendLogShell(ContentShell* contentShell) {
     auto hash = this->log.empty() ? "" : this->createHash(this->getLastEntry());
-    this->log.push_back(LogShell(to_string(Simulator::Now().GetNanoSeconds()), this->getCurrentSeqNum() + 1, hash, this->owner, contentShell));
+    this->log.push_back(LogShell(to_string(Simulator::Now().GetSeconds()), this->getCurrentSeqNum() + 1, hash, this->owner, "", contentShell));
 }
 bool CommunicationLog::empty() {
     return this->log.empty();
