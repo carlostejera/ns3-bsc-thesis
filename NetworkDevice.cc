@@ -82,7 +82,7 @@ void NetworkDevice::printNetworkLog() {
     cout << "\033[1;" << "33" << "m" << oss.str() << "\033[0m\n";
 }
 
-void NetworkDevice::sendEntryFromIndexTo(CommunicationLog* log, std::string receiverId, int8_t seqFrom, string type) {
+void NetworkDevice::sendEntryFromIndexTo(CommunicationLog* log, std::string receiverId, int16_t seqFrom, string type) {
     if (receiverId == "-1") {
         this->packetOss << "Not known neighbour. dropped" << endl;
         return;
