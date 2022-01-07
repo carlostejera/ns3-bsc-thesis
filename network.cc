@@ -14,20 +14,47 @@ string managerPath = "/home/carlos/Documents/bake/source/ns-3.32/scratch/ns3-bsc
 
 int ethId = 10;
 int managerId = 100;
+int c = 0;
+std::vector<std::string> files {
+    "./scratch/ns3-bsc-thesis/keys/1",
+    "./scratch/ns3-bsc-thesis/keys/2",
+    "./scratch/ns3-bsc-thesis/keys/3",
+    "./scratch/ns3-bsc-thesis/keys/4",
+    "./scratch/ns3-bsc-thesis/keys/5",
+    };
 
+std::string readFile(std::string path) {
+    string line;
+    string output = "";
+    ifstream myfile (path);
+    if (myfile.is_open())
+    {
+        while ( getline (myfile,line) )
+        {
+            cout << line << endl;
+            output += line;
+        }
+        myfile.close();
+    }
+    return output;
+}
 void errorSettings(const double errorRate) {
     Config::SetDefault ("ns3::RateErrorModel::ErrorRate", DoubleValue (errorRate));
     Config::SetDefault ("ns3::RateErrorModel::ErrorUnit", StringValue ("ERROR_UNIT_PACKET"));
 
-    Config::SetDefault ("ns3::BurstErrorModel::ErrorRate", DoubleValue (1));
-    Config::SetDefault ("ns3::BurstErrorModel::BurstSize", StringValue ("ns3::UniformRandomVariable[Min=1|Max=3]"));
+//    Config::SetDefault ("ns3::BurstErrorModel::BurstSize", StringValue ("ns3::UniformRandomVariable[Min=1|Max=4]"));
 }
 
 template <class T>
 void addApplicationToNodes(Ptr<T>* apps, NodeContainer nodes, uint32_t beginFrom, double gossipInterval) {
+
+
     for (uint32_t i = 0; i < nodes.GetN(); i++) {
-        apps[i] = Create<T>(to_string(i + beginFrom), gossipInterval);
+        auto privKey = readFile(files.at(c) + "/priv.txt");
+        auto pubKey = readFile(files.at(c) + "/pub.txt");
+        apps[i] = Create<T>(to_string(i + beginFrom), gossipInterval, "");
         nodes.Get(i)->AddApplication(apps[i]);
+        c++;
     }
 }
 
@@ -77,8 +104,8 @@ void lineTopologyInterface(Ptr<User> *user_apps,
     double ENABLE_ERROR_RATE = 2.5;
     double USER0_SUBSCRIBING_USER1 = 5;
     double USER1_PUSHING_START = 5;
-    double STOP_PUSHING = 15;
-    double STOP_SIMULATION = 20;
+//    double STOP_PUSHING = 15;
+    double STOP_SIMULATION = 10;
     ////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
@@ -108,9 +135,12 @@ void lineTopologyInterface(Ptr<User> *user_apps,
 
     Simulator::Schedule(Seconds(USER0_SUBSCRIBING_USER1), &User::subscribe, user_apps[0], "user:1");
 
-    while (STOP_PUSHING > USER1_PUSHING_START) {
+    int packetNum = 10;
+    int i = 0;
+      while (packetNum > i) {
         Simulator::Schedule(Seconds(USER1_PUSHING_START), &User::pushLogToSwitch, user_apps[1]);
-        USER1_PUSHING_START += 3;
+        USER1_PUSHING_START += 0.01;
+        i++;
     }
 //    Simulator::Schedule(Seconds(6), &User::unsubscribe, user_apps[0], "user:1");
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -182,7 +212,7 @@ void nodesSetup(const uint32_t userNumbers,
     }*/
     // Add error model for user to switch links
     for (uint32_t i = 0; i < userToSwitchContainer.GetN(); i++) {
-        userToSwitchContainer.Get(i)->SetAttribute("ReceiveErrorModel", PointerValue(em));
+//        userToSwitchContainer.Get(i)->SetAttribute("ReceiveErrorModel", PointerValue(em));
     }
 
     lineTopologyInterface(user_apps, switch_apps, manager_apps, user_nodes, switch_nodes, manager_nodes, p2p, em);
