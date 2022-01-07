@@ -4,6 +4,6 @@
 
 #ifndef NS_3_30_GLOBALSVALUES_H
 #define NS_3_30_GLOBALSVALUES_H
-static int VERBOSE = 1;
+static int VERBOSE = 0;
 
 #endif //NS_3_30_GLOBALSVALUES_H
