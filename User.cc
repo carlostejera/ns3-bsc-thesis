@@ -22,29 +22,42 @@ User::recvPkt(Ptr <NetDevice> dev, Ptr<const Packet> packet, uint16_t proto, con
 
 
     if (nShell->receiverId == this->authorId) {
-        switch (this->hash(nShell->shell->shell->function)) {
-            case ADD_SWITCH:
-                this->neighbourMap.insert(make_pair(nShell->shell->authorId, dev));
-                break;
-            case UPDATE_CONTENT_FROM:
-                this->concatenateEntry(nShell);
-            default:
-                cout << "choking" << endl;
-                std::string senderId;
-                // gossip answer
-                if(nShell->type != this->authorId + "/user:*") {
-                    return;
-                }
+        if (nShell->shell->authorId != this->authorId) {
+            switch (this->hash(nShell->shell->shell->function)) {
+                case ADD_SWITCH:
+                    this->neighbourMap.insert(make_pair(nShell->shell->authorId, dev));
+                    break;
+                case UPDATE_CONTENT_FROM:
+                    this->concatenateEntry(nShell);
+                    /*if (this->logPacket.getLogByWriterReader(LOGTYPE("user:1", USER_ALL))->getCurrentSeqNum() == 1) {
+                        cout << "////////////////////////////////////////////////" << endl;
+                        cout << "////////////////////////////////////////////////" << endl;
+                        cout << "///// MY START TIME IS " << to_string(this->timer) << "///////////////" << endl;
+                        cout << "////" << "SIMULATOR TIME" << to_string(Simulator::Now().GetSeconds() - this->timer) << "     " << "////" << endl;
+                        cout << "////////////////////////////////////////////////" << endl;
+                        cout << "////////////////////////////////////////////////" << endl;
+                        Simulator::Stop();
 
-                for (auto entry : this->neighbourMap) {
-                    if (entry.second == dev) {
-                        senderId = entry.first;
+                    }*/
+                default:
+                    cout << "choking" << endl;
+                    std::string senderId;
+                    // gossip answer
+                    if(nShell->type != this->authorId + "/user:*") {
+                        return;
                     }
-                }
-                this->sendEntryFromIndexTo(this->myPersonalLog, senderId, nShell->shell->sequenceNum,
-                                           LOGTYPE(authorId, USER_ALL));
-                break;
+
+                    for (auto entry : this->neighbourMap) {
+                        if (entry.second == dev) {
+                            senderId = entry.first;
+                        }
+                    }
+                    this->sendEntryFromIndexTo(this->myPersonalLog, senderId, nShell->shell->sequenceNum,
+                                               LOGTYPE(authorId, USER_ALL));
+                    break;
+            }
         }
+
     }
 
 
@@ -68,6 +81,7 @@ void User::subscribe(std::string authorId) {
         auto p = this->createPacket(nShell);
         this->sendPacket(item.second, p);
     }
+    this->timer = Simulator::Now().GetSeconds();
     cout << "I am subscribing" << endl;
 }
 
