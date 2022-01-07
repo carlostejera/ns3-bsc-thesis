@@ -104,7 +104,7 @@ void EthSwitch::gossip() {
     for (auto entry : this->neighbourMap) {
         if (log->getLog().empty()) { // If the chosen log is empty, tell that your neighbours with a fake log entry to get help
             auto cShell = new ContentShell("f", "p", "I have no content");
-            auto lShell = new LogShell(to_string(Simulator::Now().GetMicroSeconds()), -1, "", this->manager.first, cShell);
+            auto lShell = new LogShell(to_string(Simulator::Now().GetSeconds()), -1, "", this->manager.first, "", cShell);
             nShell = new NetShell(Mac48Address::ConvertFrom(entry.second->GetAddress()), entry.first, randomLogType, 1, 0, lShell);
 //            if (entry.first != this->manager.first) {
                 auto packet = this->createPacket(nShell);
@@ -215,15 +215,19 @@ void EthSwitch::recvPkt(
 void EthSwitch::forward(Ptr<NetDevice> dev, NetShell* nShell, uint8_t hops) {
     typedef multimap<string, std::string>::iterator MMAPIterator;
     auto p = SomeFunctions::varSplitter(nShell->type, "/");
-    pair<MMAPIterator, MMAPIterator> result = this->interestedNeighbours.equal_range(p.first);
+    auto subscribed = p.first;
+    // Check which is the subscription devices are interested in
+    pair<MMAPIterator, MMAPIterator> result = this->interestedNeighbours.equal_range(subscribed);
+    Ptr<NetDevice> newDev;
     for (MMAPIterator it = result.first; it != result.second; it++) {
-        if (it->second == this->authorId) {
-            continue;
-        }
-        dev = this->neighbourMap[it->second];
+        auto check = it->first;
+        auto check2 = it->second;
+        if (it->first == it->second) continue;
+        newDev = this->neighbourMap[it->second];
+        if (newDev == dev) continue;
         nShell->receiverId = it->second;
         auto p = this->createPacket(nShell);
-        this->sendPacket(dev, p);
+        this->sendPacket(newDev, p);
     }
 }
 
@@ -235,7 +239,6 @@ bool EthSwitch::processReceivedSwitchPacket(NetShell *nShell, Ptr <NetDevice> de
     ) {
         this->concatenateEntry(nShell);
         this->interestedNeighbours.insert({shellParam, nShell->shell->authorId});
-        cout << "he is here" << endl;
         auto toSubscribe = LOGTYPE(shellParam, USER_ALL);
         cout << shellParam << endl;
         cout << "i am " << this->authorId << endl;
