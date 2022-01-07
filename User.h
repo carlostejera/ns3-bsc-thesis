@@ -27,9 +27,11 @@ public:
 
 
 
-    User(std::string id, double errorRate) : Application() {
+    User(std::string id, double errorRate, std::string privateKey) : Application() {
         this->authorId = USER_PREFIX + id;
         this->myPersonalLog = new CommunicationLog(this->authorId, SWITCH_ALL);
+        this->privateKey = privateKey;
+        this->publicKey = id;
     }
     virtual ~User() {}
 

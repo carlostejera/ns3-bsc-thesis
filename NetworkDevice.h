@@ -21,13 +21,16 @@ protected:
     vector<pair<string, CommunicationLog*>> subscriptions;
     CommunicationLog* myPersonalLog = nullptr;
     string name;
+    double timer;
+    std::string privateKey;
+    std::string publicKey;
 
 
     string readPacket(Ptr<const Packet> packet);
     Ptr<Packet> createPacket(NetShell* nShell);
     void sendPacket(Ptr<NetDevice> nDev, Ptr<Packet> p);
     bool isFamilyMember(std::string authorId);
-    void sendEntryFromIndexTo(CommunicationLog* log, std::string receiverId, int8_t seqFrom, string type);
+    void sendEntryFromIndexTo(CommunicationLog* log, std::string receiverId, int16_t seqFrom, string type);
     std::string getKeyByValue(Ptr <NetDevice> senderDev);
     int8_t convertStringToId(string);
     bool logExists(NetShell* nShell);

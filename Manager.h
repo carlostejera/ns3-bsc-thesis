@@ -19,13 +19,14 @@ public:
     void processReceivedUserPacket(NetShell* netShell, Ptr<NetDevice> dev) override;
     bool concatenateEntry(NetShell* netShell);
 
-    Manager(std::string id, double errorRate) : Application() {
+    Manager(std::string id, double errorRate, std::string privateKey) : Application() {
         this->authorId = MANAGER_PREFIX + id;
         this->myType = this->authorId + "/switch:*";
 
         this->myPersonalLog = new CommunicationLog(this->authorId);
         this->myPersonalLog->initialiseLog();
-//        this->subscriptions.push_back({this->myType, this->myPersonalLog});
+        this->privateKey = privateKey;
+        this->publicKey = id;
     }
     virtual ~Manager() {}
 
