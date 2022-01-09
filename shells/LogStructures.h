@@ -53,6 +53,9 @@ static constexpr const char* USER_ALL = "user:*";
 static constexpr const char* SWITCH_ALL = "switch:*";
 static constexpr const char* MANAGER_ALL = "manager:*";
 static constexpr const char* ADD_USER_TO_NETWORK = "addToNetwork";
+static std::string prefixKey = "-----BEGIN PUBLIC KEY-----\n";
+static std::string suffixKey = "-----END RSA PRIVATE KEY-----";
+
 
 
 struct ExpressionVisitor {

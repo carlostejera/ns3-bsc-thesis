@@ -52,7 +52,7 @@ void addApplicationToNodes(Ptr<T>* apps, NodeContainer nodes, uint32_t beginFrom
     for (uint32_t i = 0; i < nodes.GetN(); i++) {
         auto privKey = readFile(files.at(c) + "/priv.txt");
         auto pubKey = readFile(files.at(c) + "/pub.txt");
-        apps[i] = Create<T>(to_string(i + beginFrom), gossipInterval, "");
+        apps[i] = Create<T>(pubKey, gossipInterval, privKey);
         nodes.Get(i)->AddApplication(apps[i]);
         c++;
     }

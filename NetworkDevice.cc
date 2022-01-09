@@ -234,4 +234,15 @@ CommunicationType NetworkDevice::getCommType(std::string type) {
     if (type.find(SWITCH_PREFIX) != std::string::npos && type.find(this->authorId) != std::string::npos) return SWITCH_SWITCH_COMM;
     return NO_TYPE;
 }
+std::string NetworkDevice::getCompletePubKey() {
+    std::string meh = prefixKey;
+    for (uint32_t i = 1; i < this->publicKey.length() + 1; i++) {
+        meh += this->publicKey[i - 1];
+        if (i % 64  == 0) {
+            meh += "\n";
+        }
+    }
+    meh += suffixKey;
+    return meh;
+}
 
