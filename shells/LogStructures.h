@@ -15,6 +15,7 @@
 #include "ns3/simulator.h"
 #include <iostream>
 #include "ns3/type-id.h"
+#include "../../../build/ns3/simulator.h"
 
 using namespace std;
 using namespace ns3;
@@ -119,7 +120,6 @@ struct LogShell : public Shell {
 };
 
 struct NetShell : public Shell {
-    ns3::Mac48Address macReceiver;
     std::string receiverId;
     string type;
     LogShell* shell;
@@ -127,9 +127,13 @@ struct NetShell : public Shell {
     uint8_t flag;
     std::string timestamp;
 
-    NetShell(ns3::Mac48Address mac, std::string receiverId, string type, uint8_t flag, uint8_t hops, LogShell* shell, std::string timestamp = to_string(Simulator::Now().GetSeconds())){
+    NetShell(std::string receiverId,
+             string type,
+             uint8_t flag,
+             uint8_t hops,
+             LogShell *shell,
+             std::string timestamp = to_string(Simulator::Now().GetSeconds())) {
         this->timestamp = timestamp;
-        this->macReceiver = mac;
         this->receiverId = receiverId;
         this->type = type;
         this->shell = shell;
@@ -219,19 +223,18 @@ struct SomeFunctions {
         ssHops >> hops;
         string tmp = m["receiver"];
         auto receiverPair = varSplitter(tmp, "/");
-        const char *bruh = receiverPair.first.c_str();
+//        const char *bruh = receiverPair.first.c_str();
 
         stringstream ssFlag(m["flag"]);
         int flag;
         ssFlag >> flag;
         auto resultShell = new NetShell(
-                ns3::Mac48Address(bruh),
-                receiverPair.second,
-                m["type"],
-                flag,
-                hops,
-                lShellNew,
-                m["timestamp"]
+            receiverPair.second,
+            m["type"],
+            flag,
+            hops,
+            lShellNew,
+            m["timestamp"]
         );
         return resultShell;
     }

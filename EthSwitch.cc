@@ -17,7 +17,7 @@ void EthSwitch::requestJoiningNetwork() {
     LogShell lShell = log->getLastEntry();
     LogShell* lShell_p = &lShell;
     string commLog = LOGTYPE(this->authorId, MANAGER_ALL);
-    NetShell *nShell = new NetShell(ns3::Mac48Address("FF:FF:FF:FF:FF:FF"),MANAGER_ALL,commLog,0, 0,lShell_p);
+    NetShell *nShell = new NetShell(MANAGER_ALL, commLog, 0, 0, lShell_p);
     this->logPacket.add(LogPacket(commLog, log, CommunicationType::P2P_COMM));
 //    this->communicationLogs.insert({commLog, log});
     // Broadcast that the user wants to join the network (simulating via uni-cast)
@@ -79,14 +79,13 @@ void EthSwitch::sendPlugAndPlayConfirmation(Ptr<NetDevice> dev, std::string auth
     this->connectedUser.push_back(authorId);
 
     Ptr<Packet> p = this->createPacket(
-            new NetShell(
-                ns3::Mac48Address::ConvertFrom(dev->GetAddress()),
-                authorId,
-                logName,
-                0,
-                0,
-                &(tmp)
-                    )
+        new NetShell(
+            authorId,
+            logName,
+            0,
+            0,
+            &(tmp)
+        )
     );
     this->sendPacket(dev, p);
 }
@@ -105,7 +104,7 @@ void EthSwitch::gossip() {
         if (log->getLog().empty()) { // If the chosen log is empty, tell that your neighbours with a fake log entry to get help
             auto cShell = new ContentShell("f", "p", "I have no content");
             auto lShell = new LogShell(to_string(Simulator::Now().GetSeconds()), -1, "", this->manager.first, "", cShell);
-            nShell = new NetShell(Mac48Address::ConvertFrom(entry.second->GetAddress()), entry.first, randomLogType, 1, 0, lShell);
+            nShell = new NetShell(entry.first, randomLogType, 1, 0, lShell);
 //            if (entry.first != this->manager.first) {
                 auto packet = this->createPacket(nShell);
                 this->sendPacket(entry.second, packet);
@@ -113,7 +112,7 @@ void EthSwitch::gossip() {
         } else {
             LogShell tmp = log->getLastEntry();
             LogShell* p = &tmp;
-            nShell = new NetShell(Mac48Address::ConvertFrom(entry.second->GetAddress()), entry.first, randomLogType, 1, 0, p);
+            nShell = new NetShell(entry.first, randomLogType, 1, 0, p);
 //            if (entry.first != this->manager.first) {
                 auto packet = this->createPacket(nShell);
                 this->sendPacket(entry.second, packet);
@@ -336,14 +335,14 @@ void EthSwitch::broadcastToNeighbours(Ptr <NetDevice> dev, NetShell *nShell) {
 //                this->communicationLogs[logType]->initialiseLog();
                 LogShell tmp = this->logPacket.getLogByWriterReader(logType)->getLastEntry();
                 LogShell* lShell_p = &tmp;
-                NetShell* initNShell = new NetShell(ns3::Mac48Address::ConvertFrom(newReceiverDev->GetAddress()), neighbourId, logType, 0, 0, lShell_p);
+                NetShell* initNShell = new NetShell(neighbourId, logType, 0, 0, lShell_p);
                 auto p = this->createPacket(initNShell);
                 this->sendPacket(newReceiverDev, p);
             }
             this->logPacket.getLogByWriterReader(logType)->appendLogShell(nShell->shell->shell);
             LogShell tmp = this->logPacket.getLogByWriterReader(logType)->getLastEntry();
             LogShell* lShell_p = &tmp;
-            nShell = new NetShell(ns3::Mac48Address::ConvertFrom(newReceiverDev->GetAddress()), neighbourId, logType, 0, 0, lShell_p);
+            nShell = new NetShell(neighbourId, logType, 0, 0, lShell_p);
 
             cout << "sending packets" << endl;
 
@@ -420,7 +419,7 @@ bool EthSwitch::forwardDeletion(NetShell *nShell) {
         log->appendLogShell(cShell);
         LogShell lShell = log->getLastEntry();
         LogShell* lShell_p = &lShell;
-        nShell = new NetShell(ns3::Mac48Address::ConvertFrom(dev->GetAddress()), subscriber, logType, 0, 0, lShell_p);
+        nShell = new NetShell(subscriber, logType, 0, 0, lShell_p);
         auto packet = this->createPacket(nShell);
         this->sendPacket(dev, packet);
     }

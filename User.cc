@@ -71,13 +71,13 @@ void User::subscribe(std::string authorId) {
 //    this->subscriptions.push_back({authorId + "/user:*", new CommunicationLog(authorId, "user:*")});
     for (auto item : this->neighbourMap) {
         auto neighbourId = item.first;
-        auto mac = ns3::Mac48Address::ConvertFrom(item.second->GetAddress());
+//        auto mac = ns3::Mac48Address::ConvertFrom(item.second->GetAddress());
 
         auto cShell = new ContentShell("getContentFrom", authorId,"Subscribe the author " + authorId);
         auto type = this->authorId + "/switch:*";
         this->logPacket.getLogByWriterReader(type)->appendLogShell(cShell);
         auto lShell = this->logPacket.getLogByWriterReader(type)->getLastEntry();
-        auto nShell = new NetShell(mac, authorId, type, 0, 0,&lShell);
+        auto nShell = new NetShell(authorId, type, 0, 0, &lShell);
         auto p = this->createPacket(nShell);
         this->sendPacket(item.second, p);
     }
@@ -96,7 +96,7 @@ void User::plugAndPlay() {
 
     auto logShell = this->logPacket.getLogByWriterReader(logName)->getLastEntry();
     LogShell* lShell_p = &logShell;
-    NetShell *nShell = new NetShell(ns3::Mac48Address("FF:FF:FF:FF:FF:FF"),SWITCH_ALL,logName,0, 0, lShell_p);
+    NetShell *nShell = new NetShell(SWITCH_ALL, logName, 0, 0, lShell_p);
 
     for (uint32_t i = 0; i < GetNode()->GetNDevices(); ++i) {
         Ptr <Packet> p = this->createPacket(nShell);
@@ -135,7 +135,7 @@ void User::pushLogToSwitch() {
     LogShell *shell_p = &lShell;
 
     for (auto entry: this->neighbourMap) {
-        NetShell *netShell = new NetShell(ns3::Mac48Address::ConvertFrom(entry.second->GetAddress()), entry.first,
+        NetShell *netShell = new NetShell(entry.first,
                                           LOGTYPE(this->authorId, USER_ALL), 0, 0, shell_p);
         auto p = this->createPacket(netShell);
         this->sendPacket(entry.second, p);
@@ -158,12 +158,12 @@ void User::unsubscribe(std::string authorId) {
 
         auto log = this->logPacket.getLogByWriterReader(LOGTYPE(this->authorId, SWITCH_ALL));
         auto type = LOGTYPE(log->getOwner(), log->getDedicated());
-        auto mac = ns3::Mac48Address::ConvertFrom(dev->GetAddress());
+//        auto mac = ns3::Mac48Address::ConvertFrom(dev->GetAddress());
 
         auto cShell = new ContentShell(UNSUBSCRIBE, authorId,"Unsubscribe the neighbourAuthor " + authorId);
         log->appendLogShell(cShell);
         auto lShell = log->getLastEntry();
-        auto nShell = new NetShell(mac, neighbourAuthor, type, 0, 0, &lShell);
+        auto nShell = new NetShell(neighbourAuthor, type, 0, 0, &lShell);
         auto p = this->createPacket(nShell);
         this->sendPacket(dev, p);
     }
