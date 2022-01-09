@@ -10,7 +10,7 @@ using namespace std;
  */
 
 void EthSwitch::requestJoiningNetwork() {
-    CommunicationLog* log = new CommunicationLog(this->authorId, SWITCH_ALL);
+    CommunicationLog* log = new CommunicationLog(this->authorId, MANAGER_ALL);
 
     ContentShell *cShell = new ContentShell(ADD_USER_TO_NETWORK,this->authorId,this->authorId + " wants to join the network");
     log->appendLogShell(cShell);

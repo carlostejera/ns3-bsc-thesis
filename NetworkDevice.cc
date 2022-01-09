@@ -134,7 +134,7 @@ bool NetworkDevice::logExists(NetShell* nShell) {
 bool NetworkDevice::concatenateEntry(NetShell* nShell) {
     if (!this->logExists(nShell)) {
         // TODO: Maybe change
-        auto comm = new CommunicationLog(nShell->shell->authorId, "108");
+        auto comm = new CommunicationLog(nShell->shell->authorId, "IDK");
         auto logType = nShell->type;
         this->logPacket.add(LogPacket(nShell->type, comm, this->getCommType(logType)));
 //        auto log = this->logPacket.getLogByWriterReader(nShell->type);

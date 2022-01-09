@@ -23,7 +23,7 @@ public:
         this->authorId = MANAGER_PREFIX + id;
         this->myType = this->authorId + "/switch:*";
 
-        this->myPersonalLog = new CommunicationLog(this->authorId);
+        this->myPersonalLog = new CommunicationLog(this->authorId, SWITCH_ALL);
         this->myPersonalLog->initialiseLog();
         this->privateKey = privateKey;
         this->publicKey = id;

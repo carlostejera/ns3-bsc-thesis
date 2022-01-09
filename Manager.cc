@@ -46,7 +46,7 @@ void Manager::broadcastLastNetworkChange(std::string exceptedReceiver ="-1") {
 bool Manager::concatenateEntry(NetShell* netShell) {
     if (!this->logExists(netShell)) {
         // TODO: Maybe change
-        this->logPacket.add(LogPacket(netShell->type, new CommunicationLog(netShell->shell->authorId, this->authorId), CommunicationType::NO_TYPE));
+        this->logPacket.add(LogPacket(netShell->type, new CommunicationLog(netShell->shell->authorId, this->authorId), CommunicationType::P2P_COMM));
 //        this->communicationLogs.insert({netShell->type, new CommunicationLog(netShell->shell->authorId, this->authorId)});
     }
     CommunicationLog* log = this->logPacket.getLogByWriterReader(netShell->type);
