@@ -21,7 +21,7 @@ User::recvPkt(Ptr <NetDevice> dev, Ptr<const Packet> packet, uint16_t proto, con
     }
 
 
-    if (nShell->receiverId == this->authorId) {
+    if (nShell->type.find("/user:") != string::npos) {
         if (nShell->shell->authorId != this->authorId) {
             switch (this->hash(nShell->shell->shell->function)) {
                 case ADD_SWITCH:

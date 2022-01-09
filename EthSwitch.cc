@@ -138,7 +138,9 @@ void EthSwitch::recvPkt(
 
     // Transforms the string to a net shell object
     NetShell* nShell = SomeFunctions::shell(netShell);
-
+    cout << netShell << endl;
+    cout << netShell << endl;
+    cout << netShell << endl;
 
     // Records every sender to keep a map of the neighbours
     if (this->isNeighbourToAdd(this->getKeyByValue(dev), nShell->hops)) {
@@ -159,10 +161,17 @@ void EthSwitch::recvPkt(
             this->packetOss << "Dropping packet" << endl;
 
         } else if (nShell->type.find("/switch:") != string::npos) {
+            // Check if it is the manager and if it is not already assigned
+            if (nShell->type.find(MANAGER_PREFIX) != string::npos && !this->isManagerAssigned) {
+                auto p = SomeFunctions::varSplitter(nShell->type, "/");
+                this->manager = {p.first, dev};
+                this->isManagerAssigned = true;
+                Simulator::Schedule(Seconds(this->gossipInterval), &EthSwitch::gossip, this);
+            }
             if (this->processReceivedSwitchPacket(nShell, dev)) {
                 auto lastEntry = this->logPacket.getLogByWriterReader(nShell->type)->getLastEntry();
                 //Dropping packet if this switch is not the receiver
-                CommunicationLog *cLog;
+//                CommunicationLog *cLog;
                 switch (this->hash(lastEntry.shell->function)) {
                     case ADD_MEMBER_TO_NETWORK:this->addMemberToNetwork(lastEntry.shell->params);
                         break;
@@ -171,9 +180,9 @@ void EthSwitch::recvPkt(
                     case GET_CONTENT_FROM:
                         // Somebody is interested in a log, so am I
                         this->interestedNeighbours.insert({nShell->shell->shell->params, this->getKeyByValue(dev)});
-                        nShell->type = this->authorId + "/" + nShell->shell->shell->params;
-                        cLog = new CommunicationLog(this->authorId, nShell->shell->shell->params);
-                        cLog->addToLog(*nShell->shell);
+//                        nShell->type = this->authorId + "/" + nShell->shell->shell->params;
+//                        cLog = new CommunicationLog(this->authorId, nShell->shell->shell->params);
+//                        cLog->addToLog(*nShell->shell);
                         this->broadcastToNeighbours(dev, nShell);
                         this->packetOss << "& and forwarding request";
                         break;
@@ -224,7 +233,7 @@ void EthSwitch::forward(Ptr<NetDevice> dev, NetShell* nShell, uint8_t hops) {
         if (it->first == it->second) continue;
         newDev = this->neighbourMap[it->second];
         if (newDev == dev) continue;
-        nShell->receiverId = it->second;
+//        nShell->receiverId = it->second;
         auto p = this->createPacket(nShell);
         this->sendPacket(newDev, p);
     }
@@ -253,7 +262,7 @@ bool EthSwitch::processReceivedSwitchPacket(NetShell *nShell, Ptr <NetDevice> de
             return false;
         }
     }
-    if (nShell->type.find("manager") != string::npos && nShell->receiverId == this->authorId && !this->isManagerAssigned) {
+    if (nShell->type.find("manager") != string::npos && nShell->type.find("/" + this->authorId) != string::npos && !this->isManagerAssigned) {
         this->assignManager(dev, nShell->shell->authorId);
         Simulator::Schedule(Seconds(this->gossipInterval), &EthSwitch::gossip, this);
     }
@@ -324,13 +333,21 @@ void EthSwitch::broadcastToNeighbours(Ptr <NetDevice> dev, NetShell *nShell) {
         auto neighbourId = entry.first;
         auto newReceiverDev = entry.second;
         auto logType = LOGTYPE(this->authorId, neighbourId);
-
-        if (entry.second != dev && neighbourId != this->manager.first) {
+        cout << "-----" << endl;
+        cout << neighbourId << endl;
+        cout << this->manager.first << endl;
+        cout << "-----" << endl;
+        cout << (newReceiverDev != dev ) << endl;
+        cout << (neighbourId != this->manager.first) << endl;
+        if (newReceiverDev != dev && neighbourId != this->manager.first) {
             if(!this->logPacket.exists(logType)) {
                 auto cLog = new CommunicationLog(this->authorId, neighbourId);
                 cLog->initialiseLog();
                 this->logPacket.add(LogPacket(logType, cLog, CommunicationType::SWITCH_SWITCH_COMM));
+                cout << this->manager.first;
+                cout << neighbourId << endl;
                 cout << "halllooooo creating" << logType << endl;
+                cout << cLog->getLogAsString();
 //                this->communicationLogs.insert({logType, cLog});
 //                this->communicationLogs[logType]->initialiseLog();
                 LogShell tmp = this->logPacket.getLogByWriterReader(logType)->getLastEntry();

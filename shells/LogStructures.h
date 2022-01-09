@@ -120,7 +120,6 @@ struct LogShell : public Shell {
 };
 
 struct NetShell : public Shell {
-    std::string receiverId;
     string type;
     LogShell* shell;
     uint8_t hops;
@@ -134,7 +133,6 @@ struct NetShell : public Shell {
              LogShell *shell,
              std::string timestamp = to_string(Simulator::Now().GetSeconds())) {
         this->timestamp = timestamp;
-        this->receiverId = receiverId;
         this->type = type;
         this->shell = shell;
         this->hops = hops;
