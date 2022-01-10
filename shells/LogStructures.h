@@ -100,8 +100,7 @@ struct LogShell : public Shell {
     ContentShell* shell;
     std::string timestamp;
     std::string signature;
-//    static long globalHash = 100000;
-    long myHash; 
+    long myHash;
 
 
     LogShell(std::string timestamp, int16_t seqNum, string prevHash, std::string authorId, std::string signature, ContentShell* shell) :
@@ -112,9 +111,6 @@ struct LogShell : public Shell {
             timestamp(timestamp),
             signature(signature)
     {
-        //TODO: Add event checker with the global hash
-//        this->myHash = globalHash;
-//        globalHash++;
     }
 
     void accept(ExpressionVisitor* visitor) override {
@@ -224,7 +220,6 @@ struct SomeFunctions {
         ssHops >> hops;
         string tmp = m["receiver"];
         auto receiverPair = varSplitter(tmp, "/");
-//        const char *bruh = receiverPair.first.c_str();
 
         stringstream ssFlag(m["flag"]);
         int flag;
@@ -246,29 +241,3 @@ struct SomeFunctions {
     }
 };
 
-class MyHeader : public Header {
-public:
-
-    MyHeader();
-
-    virtual ~MyHeader();
-
-    void SetData(uint16_t data);
-
-    uint16_t GetData(void) const;
-
-    static TypeId GetTypeId(void);
-
-    virtual TypeId GetInstanceTypeId(void) const;
-
-    virtual void Print(std::ostream &os) const;
-
-    virtual void Serialize(Buffer::Iterator start) const;
-
-    virtual uint32_t Deserialize(Buffer::Iterator start);
-
-    virtual uint32_t GetSerializedSize(void) const;
-
-private:
-    uint16_t m_data;
-};

@@ -68,10 +68,7 @@ User::recvPkt(Ptr <NetDevice> dev, Ptr<const Packet> packet, uint16_t proto, con
 void User::joinNetwork() {}
 
 void User::subscribe(std::string authorId) {
-//    this->subscriptions.push_back({authorId + "/user:*", new CommunicationLog(authorId, "user:*")});
     for (auto item : this->neighbourMap) {
-        auto neighbourId = item.first;
-//        auto mac = ns3::Mac48Address::ConvertFrom(item.second->GetAddress());
 
         auto cShell = new ContentShell("getContentFrom", authorId,"Subscribe the author " + authorId);
         auto type = this->authorId + "/switch:*";
@@ -82,7 +79,6 @@ void User::subscribe(std::string authorId) {
         this->sendPacket(item.second, p);
     }
     this->timer = Simulator::Now().GetSeconds();
-    cout << "I am subscribing" << endl;
 }
 
 void User::plugAndPlay() {
@@ -158,7 +154,6 @@ void User::unsubscribe(std::string authorId) {
 
         auto log = this->logPacket.getLogByWriterReader(LOGTYPE(this->authorId, SWITCH_ALL));
         auto type = LOGTYPE(log->getOwner(), log->getDedicated());
-//        auto mac = ns3::Mac48Address::ConvertFrom(dev->GetAddress());
 
         auto cShell = new ContentShell(UNSUBSCRIBE, authorId,"Unsubscribe the neighbourAuthor " + authorId);
         log->appendLogShell(cShell);

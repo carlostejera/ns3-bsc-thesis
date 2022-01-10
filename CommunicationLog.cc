@@ -21,7 +21,6 @@ bool CommunicationLog::addToLog(LogShell shell) {
  */
 void CommunicationLog::initialiseLog() {
     this->appendLogShell(new ContentShell("", "", "Log initialised"));
-//    this->addToLog(LogShell(0, "", this->owner, new ContentShell("", "", "Log initialised")));
 }
 
 /**

@@ -49,7 +49,6 @@ bool Manager::concatenateEntry(NetShell* netShell) {
         this->logPacket.add(LogPacket(netShell->type, new CommunicationLog(netShell->shell->authorId,
                                                                            this->authorId,
                                                                            "NONE"), CommunicationType::P2P_COMM));
-//        this->communicationLogs.insert({netShell->type, new CommunicationLog(netShell->shell->authorId, this->authorId)});
     }
     CommunicationLog* log = this->logPacket.getLogByWriterReader(netShell->type);
     string conc = "& concatenating entry " + to_string(netShell->shell->sequenceNum) + " to " + netShell->type + "\n";
@@ -88,7 +87,6 @@ void Manager::recvPkt(
             case ADD_TO_NETWORK:
                 this->registerUser(dev, nShell->shell->authorId);
                 this->packetOss << "Add neighbour " << nShell->shell->authorId << " & register Switch ";
-//            this->sendNetworkJoinConfirmation(receiverId);
                 this->sendEntryFromIndexTo(this->myPersonalLog, nShell->shell->authorId, 0, this->myType);
                 this->packetOss << "& sending log " << "manager" + this->authorId + "/switch* ";
                 this->broadcastLastNetworkChange(nShell->shell->authorId);
@@ -112,7 +110,7 @@ void Manager::recvPkt(
 
     this->packetOss << "---------------ManagerPacket_END----------------\n" << endl;
     if (VERBOSE) {
-        // cout << this->packetOss.str() << endl;
+         cout << this->packetOss.str() << endl;
     }
 }
 

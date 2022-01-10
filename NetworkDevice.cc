@@ -98,7 +98,6 @@ void NetworkDevice::sendEntryFromIndexTo(CommunicationLog* log, std::string rece
     LogShell lShell = log->getLastEntry();
     LogShell* logShell_p = &lShell;
     p.visit(logShell_p);
-//    auto receiverMac = ns3::Mac48Address::ConvertFrom(receiverNetDevice->GetAddress());
     for (int i = seqFrom; i <= log->getCurrentSeqNum(); i++) {
         auto lShell = log->getEntryAt(i);
         NetShell* nShell = new NetShell(receiverId, type, 0, 0, &lShell);
@@ -115,6 +114,7 @@ std::string NetworkDevice::getKeyByValue(Ptr<NetDevice> senderDev) {
             return authorId;
         }
     }
+
     cout << "something went wrong" << endl;
     return "-1";
 }
@@ -137,14 +137,7 @@ bool NetworkDevice::concatenateEntry(NetShell* nShell) {
         auto comm = new CommunicationLog(nShell->shell->authorId, "IDK", "NONE");
         auto logType = nShell->type;
         this->logPacket.add(LogPacket(nShell->type, comm, this->getCommType(logType)));
-//        auto log = this->logPacket.getLogByWriterReader(nShell->type);
-/*        if ((nShell->type.find(MANAGER_PREFIX) != string::npos && nShell->type.find(SWITCH_ALL) != string::npos)
-        || (nShell->type.find(USER_PREFIX) != string::npos && nShell->type.find(USER_ALL) != string::npos)
-        ) {
-            this->subscriptions.push_back({nShell->type,  log});
-        } else {
-//            this->communicationLogs.insert({nShell->type, log});
-        }*/
+
     }
 
     return this->isEntryConcatenated(nShell);
@@ -177,13 +170,10 @@ void NetworkDevice::addNeighbour(std::string authorId, Ptr<NetDevice> dev) {
 }
 
 void NetworkDevice::printPacketResult() {
-    cout << this->packetOss.str() << endl;
     this->packetOss.str("");
 
 }
 bool NetworkDevice::isGossipEntryOlder(NetShell *nShell) {
-    cout << "i am " << this->authorId << endl;
-    cout << nShell->type << endl;
     // TODO: maybe an error
     return this->logPacket.getLogByWriterReader(nShell->type)->getCurrentSeqNum() > nShell->shell->sequenceNum;
 }
@@ -200,20 +190,7 @@ const std::string NetworkDevice::LOGTYPE(std::string writer, std::string reader)
 }
 
 void NetworkDevice::removeSubscription(std::string subscription) {
-    cout << subscription << endl;
-    cout << subscription << endl;
-    cout << subscription << endl;
-    cout << subscription << endl;
-    cout << subscription << endl;
     this->logPacket.remove(LOGTYPE(subscription, USER_ALL));
-   /* for (auto it = this->subscriptions.begin(); it != this->subscriptions.end(); ++it) {
-        auto interested = it->first;
-        if (interested == LOGTYPE(subscription, USER_ALL)) {
-            this->subscriptions.erase(it);
-            break;
-
-        }
-    }*/
 }
 void NetworkDevice::printBlack(std::string output) {
     cout << "\033[1;" << "31" << "m" << output << "\033[0m\n";

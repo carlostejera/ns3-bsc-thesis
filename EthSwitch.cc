@@ -138,9 +138,8 @@ void EthSwitch::recvPkt(
 
     // Transforms the string to a net shell object
     NetShell* nShell = SomeFunctions::shell(netShell);
-    cout << netShell << endl;
-    cout << netShell << endl;
-    cout << netShell << endl;
+
+
 
     // Records every sender to keep a map of the neighbours
     if (this->isNeighbourToAdd(this->getKeyByValue(dev), nShell->hops)) {
@@ -180,9 +179,6 @@ void EthSwitch::recvPkt(
                     case GET_CONTENT_FROM:
                         // Somebody is interested in a log, so am I
                         this->interestedNeighbours.insert({nShell->shell->shell->params, this->getKeyByValue(dev)});
-//                        nShell->type = this->authorId + "/" + nShell->shell->shell->params;
-//                        cLog = new CommunicationLog(this->authorId, nShell->shell->shell->params);
-//                        cLog->addToLog(*nShell->shell);
                         this->broadcastToNeighbours(dev, nShell);
                         this->packetOss << "& and forwarding request";
                         break;
@@ -248,9 +244,6 @@ bool EthSwitch::processReceivedSwitchPacket(NetShell *nShell, Ptr <NetDevice> de
         this->concatenateEntry(nShell);
         this->interestedNeighbours.insert({shellParam, nShell->shell->authorId});
         auto toSubscribe = LOGTYPE(shellParam, USER_ALL);
-        cout << shellParam << endl;
-        cout << "i am " << this->authorId << endl;
-        cout << toSubscribe << endl;
         this->sendEntryFromIndexTo(this->getLogFrom(toSubscribe), this->getKeyByValue(dev), 0, toSubscribe);
         return false;
     }
@@ -282,20 +275,7 @@ void EthSwitch::processReceivedUserPacket(NetShell *nShell, Ptr <NetDevice> dev)
             this->interestedNeighbours.insert({p.second, this->getKeyByValue(dev)});
             // Target is here
             if (this->isNeighbour(shellParam) || this->logPacket.exists(LOGTYPE(shellParam, USER_ALL))) {
-                cout << "he is here" << endl;
-                cout << "XDDDDDDDDDDDDDDDDDDDDD" << endl;
-                cout << "XDDDDDDDDDDDDDDDDDDDDD" << endl;
-                cout << "XDDDDDDDDDDDDDDDDDDDDD" << endl;
-                cout << "XDDDDDDDDDDDDDDDDDDDDD" << endl;
-                cout << "XDDDDDDDDDDDDDDDDDDDDD" << endl;
-                cout << "XDDDDDDDDDDDDDDDDDDDDD" << endl;
-                cout << "XDDDDDDDDDDDDDDDDDDDDD" << endl;
-                cout << "XDDDDDDDDDDDDDDDDDDDDD" << endl;
-                cout << "XDDDDDDDDDDDDDDDDDDDDD" << endl;
                 auto toSubscribe = LOGTYPE(shellParam, USER_ALL);
-                cout << shellParam << endl;
-                cout << "i am " << this->authorId << endl;
-                cout << toSubscribe << endl;
                 this->sendEntryFromIndexTo(this->getLogFrom(toSubscribe), this->getKeyByValue(dev), 0, toSubscribe);
             } else {
                 // Somebody is interested in a log, so am I
@@ -305,7 +285,6 @@ void EthSwitch::processReceivedUserPacket(NetShell *nShell, Ptr <NetDevice> dev)
 
         } else if (this->hash(shellFunction) == UPDATE_CONTENT_FROM) { // User pushes content to switch
             if (this->concatenateEntry(nShell)) { // If new entry gets concatenated, then push to the subscribers
-                cout << this->getKeyByValue(dev) << endl;
 
                 // If no interest exist yet, create one for the sender (dev)
                 if (!this->interestExists(nShell->shell->authorId, this->getKeyByValue(dev))) {
@@ -326,28 +305,15 @@ void EthSwitch::processReceivedUserPacket(NetShell *nShell, Ptr <NetDevice> dev)
 }
 
 void EthSwitch::broadcastToNeighbours(Ptr <NetDevice> dev, NetShell *nShell) {
-    cout << "what the fck" << endl;
     for (auto entry : this->neighbourMap) {
-        cout << "check" << endl;
-        cout << entry.first << endl;
         auto neighbourId = entry.first;
         auto newReceiverDev = entry.second;
         auto logType = LOGTYPE(this->authorId, neighbourId);
-        cout << "-----" << endl;
-        cout << neighbourId << endl;
-        cout << this->manager.first << endl;
-        cout << "-----" << endl;
-        cout << (newReceiverDev != dev ) << endl;
-        cout << (neighbourId != this->manager.first) << endl;
         if (newReceiverDev != dev && neighbourId != this->manager.first) {
             if(!this->logPacket.exists(logType)) {
                 auto cLog = new CommunicationLog(this->authorId, neighbourId, this->privateKey);
                 cLog->initialiseLog();
                 this->logPacket.add(LogPacket(logType, cLog, CommunicationType::SWITCH_SWITCH_COMM));
-                cout << this->manager.first;
-                cout << neighbourId << endl;
-                cout << "halllooooo creating" << logType << endl;
-                cout << cLog->getLogAsString();
 //                this->communicationLogs.insert({logType, cLog});
 //                this->communicationLogs[logType]->initialiseLog();
                 LogShell tmp = this->logPacket.getLogByWriterReader(logType)->getLastEntry();
@@ -361,7 +327,6 @@ void EthSwitch::broadcastToNeighbours(Ptr <NetDevice> dev, NetShell *nShell) {
             LogShell* lShell_p = &tmp;
             nShell = new NetShell(neighbourId, logType, 0, 0, lShell_p);
 
-            cout << "sending packets" << endl;
 
             auto p = this->createPacket(nShell);
             this->sendPacket(newReceiverDev, p);
@@ -380,7 +345,6 @@ void EthSwitch::removeUserFromInl(std::string canceller,
     typedef multimap<std::string, std::string>::iterator iter;
     for (auto i : this->interestedNeighbours) {
     }
-    cout << subscription << endl;
     std::pair<iter, iter> iterpair = this->interestedNeighbours.equal_range(subscription);
     iter it = iterpair.first;
     for (; it != iterpair.second; ++it) {
