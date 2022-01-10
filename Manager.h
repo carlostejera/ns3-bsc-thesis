@@ -22,10 +22,9 @@ public:
     Manager(std::string id, double errorRate, std::string privateKey) : Application() {
         this->authorId = MANAGER_PREFIX + id;
         this->myType = this->authorId + "/switch:*";
-
-        this->myPersonalLog = new CommunicationLog(this->authorId, SWITCH_ALL);
-        this->myPersonalLog->initialiseLog();
         this->privateKey = privateKey;
+        this->myPersonalLog = new CommunicationLog(this->authorId, SWITCH_ALL, this->privateKey);
+        this->myPersonalLog->initialiseLog();
         this->publicKey = id;
     }
     virtual ~Manager() {}

@@ -53,8 +53,8 @@ static constexpr const char* USER_ALL = "user:*";
 static constexpr const char* SWITCH_ALL = "switch:*";
 static constexpr const char* MANAGER_ALL = "manager:*";
 static constexpr const char* ADD_USER_TO_NETWORK = "addToNetwork";
-static std::string prefixKey = "-----BEGIN PUBLIC KEY-----\n";
-static std::string suffixKey = "-----END RSA PRIVATE KEY-----";
+//static std::string prefixKey = "-----BEGIN PUBLIC KEY-----\n";
+//static std::string suffixKey = "-----END RSA PRIVATE KEY-----";
 
 
 
@@ -231,11 +231,11 @@ struct SomeFunctions {
         ssFlag >> flag;
         auto resultShell = new NetShell(
             receiverPair.second,
-            m["type"],
+            m["log_type"],
             flag,
             hops,
             lShellNew,
-            m["timestamp"]
+            m["send_timestamp"]
         );
         return resultShell;
     }

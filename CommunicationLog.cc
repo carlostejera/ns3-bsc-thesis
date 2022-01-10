@@ -107,6 +107,12 @@ string CommunicationLog::createHash(LogShell entry) {
  * @return result of the checks
  */
 bool CommunicationLog::isSubsequentEntry(LogShell lShell) {
+    /*NetShellRSA nsr;
+    Printer printer;
+    printer.visit(lShell.shell);
+    auto p = SomeFunctions::varSplitter(lShell.authorId, ":");
+    nsr.verify(p.second, printer.str(), lShell.signature);
+    */
     return ((this->log.empty() && lShell.sequenceNum == 0)
     ||
     (this->getCurrentSeqNum() + 1 == lShell.sequenceNum && this->createHash(this->getLastEntry()) == lShell.prevEventHash && this->owner == lShell.authorId)
@@ -134,6 +140,16 @@ const std::string & CommunicationLog::getOwner() const {
  * @param contentShell new content to append as LogShell
  */
 void CommunicationLog::appendLogShell(ContentShell* contentShell) {
+   /* Printer stringAssembler;
+    stringAssembler.visit(contentShell);
+    string contentString = stringAssembler.str();
+    stringAssembler.clearOss();
+    NetShellRSA nrs;
+    std::string signature = nrs.sign(this->privKey, contentString);
+
+    // Because of the == at the end
+    signature.pop_back();
+    signature.pop_back();*/
     auto hash = this->log.empty() ? "" : this->createHash(this->getLastEntry());
     this->log.push_back(LogShell(to_string(Simulator::Now().GetSeconds()), this->getCurrentSeqNum() + 1, hash, this->owner, "", contentShell));
 }

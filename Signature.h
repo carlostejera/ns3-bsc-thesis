@@ -10,6 +10,7 @@
 #include <openssl/err.h>
 #include <assert.h>
 #include <cstring>
+/*
 std::string privateKey = "-----BEGIN RSA PRIVATE KEY-----\n"
                          "MIIBOwIBAAJBALUkVnx6vfSYizZmaA6d95GLVjms/erL4PBit1/S9mIFhm/WSTIg\n"
                          "30FJXkTzn0gz66NWmoJfsmmKgTiKnaESTRECAwEAAQJBAKQCFLR8RcVS4KkOq6Sg\n"
@@ -24,8 +25,13 @@ std::string publicKey = "-----BEGIN PUBLIC KEY-----\n"
                         "MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBALUkVnx6vfSYizZmaA6d95GLVjms/erL\n"
                         "4PBit1/S9mIFhm/WSTIg30FJXkTzn0gz66NWmoJfsmmKgTiKnaESTRECAwEAAQ==\n"
                         "-----END PUBLIC KEY-----";
+*/
 
-struct NetShellRSA {
+static std::string prefixKey = "-----BEGIN PUBLIC KEY-----\n";
+static std::string suffixKey = "\n-----END RSA PRIVATE KEY-----";
+
+
+class NetShellRSA {
 
     RSA *createPrivateRSA(std::string key) {
         RSA *rsa = NULL;
@@ -178,7 +184,34 @@ struct NetShellRSA {
                                &authentic);
         return result & authentic;
     }
-}
+  public:
+    std::string sign(std::string key, std::string msg) {
+        char * signature = signMessage(key, msg);
+        std::string str(signature);
+        std::string tmp = "";
+        for (uint32_t i = 0; i < str.length(); i++) {
+            if (str.at(i) != '\n'){ tmp += str[i]; }
+        }
+        return tmp;
+    }
+
+    bool verify(std::string publicKey, std::string plainText, std::string signature) {
+        publicKey.insert(64, "\n");
+        publicKey = prefixKey + publicKey + suffixKey;
+        std::cout << publicKey << std::endl;
+        signature += "==";
+        signature.insert(64, "\n");
+        std::cout << "signature" << std::endl;
+        std::cout << signature << std::endl;
+        std::cout << signature << std::endl;
+        std::cout << signature << std::endl;
+        char *cstr = new char[signature.length() + 1];
+        strcpy(cstr, signature.c_str());
+        bool res = this->verifySignature(publicKey, plainText, cstr);
+        delete [] cstr;
+        return res;
+    }
+};
 /*
 
 int main() {

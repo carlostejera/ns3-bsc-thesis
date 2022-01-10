@@ -23,7 +23,7 @@ std::vector<std::string> files {
     "./scratch/ns3-bsc-thesis/keys/5",
     };
 
-std::string readFile(std::string path) {
+std::string readFile(std::string path, bool with) {
     string line;
     string output = "";
     ifstream myfile (path);
@@ -32,7 +32,11 @@ std::string readFile(std::string path) {
         while ( getline (myfile,line) )
         {
             cout << line << endl;
-            output += line;
+            if (with) {
+                output += line + "\n";
+            } else {
+                output += line;
+            }
         }
         myfile.close();
     }
@@ -50,9 +54,9 @@ void addApplicationToNodes(Ptr<T>* apps, NodeContainer nodes, uint32_t beginFrom
 
 
     for (uint32_t i = 0; i < nodes.GetN(); i++) {
-        auto privKey = readFile(files.at(c) + "/priv.txt");
-        auto pubKey = readFile(files.at(c) + "/pub.txt");
-        apps[i] = Create<T>(pubKey, gossipInterval, privKey);
+        auto privKey = readFile(files.at(c) + "/priv.txt", true);
+        auto pubKey = readFile(files.at(c) + "/pub.txt", false);
+        apps[i] = Create<T>(to_string(beginFrom + i), gossipInterval, privKey);
         nodes.Get(i)->AddApplication(apps[i]);
         c++;
     }

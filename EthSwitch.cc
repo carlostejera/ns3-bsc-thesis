@@ -10,7 +10,7 @@ using namespace std;
  */
 
 void EthSwitch::requestJoiningNetwork() {
-    CommunicationLog* log = new CommunicationLog(this->authorId, MANAGER_ALL);
+    CommunicationLog* log = new CommunicationLog(this->authorId, MANAGER_ALL, this->privateKey);
 
     ContentShell *cShell = new ContentShell(ADD_USER_TO_NETWORK,this->authorId,this->authorId + " wants to join the network");
     log->appendLogShell(cShell);
@@ -71,7 +71,7 @@ void EthSwitch::printNetworkLog() {
  */
 void EthSwitch::sendPlugAndPlayConfirmation(Ptr<NetDevice> dev, std::string authorId) {
     string logName = this->authorId + "/" + authorId;
-    CommunicationLog* cLog = new CommunicationLog(this->authorId, authorId);
+    CommunicationLog* cLog = new CommunicationLog(this->authorId, authorId, this->privateKey);
     cLog->appendLogShell(new ContentShell("addSwitch",this->authorId,"Add switch to the connected list"));
     this->logPacket.add(LogPacket(logName, cLog, CommunicationType::P2P_COMM));
     LogShell tmp = this->logPacket.getLogByWriterReader(logName)->getLastEntry();
@@ -341,7 +341,7 @@ void EthSwitch::broadcastToNeighbours(Ptr <NetDevice> dev, NetShell *nShell) {
         cout << (neighbourId != this->manager.first) << endl;
         if (newReceiverDev != dev && neighbourId != this->manager.first) {
             if(!this->logPacket.exists(logType)) {
-                auto cLog = new CommunicationLog(this->authorId, neighbourId);
+                auto cLog = new CommunicationLog(this->authorId, neighbourId, this->privateKey);
                 cLog->initialiseLog();
                 this->logPacket.add(LogPacket(logType, cLog, CommunicationType::SWITCH_SWITCH_COMM));
                 cout << this->manager.first;

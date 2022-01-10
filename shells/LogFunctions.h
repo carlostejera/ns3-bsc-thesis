@@ -26,8 +26,8 @@ void Printer::visit(LogShell *lShell) {
 
 void Printer::visit(NetShell *nShell) {
     oss
-    << "nShell=(timestamp=" << nShell->timestamp
-    << "|type=" << nShell->type
+    << "nShell=(send_timestamp=" << nShell->timestamp
+    << "|log_type=" << nShell->type
     << "|flag=" << to_string(nShell->flag)
     << "|hops=" <<  to_string(nShell->hops) << "|";
     nShell->shell->accept(this);

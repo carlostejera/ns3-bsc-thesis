@@ -134,7 +134,7 @@ bool NetworkDevice::logExists(NetShell* nShell) {
 bool NetworkDevice::concatenateEntry(NetShell* nShell) {
     if (!this->logExists(nShell)) {
         // TODO: Maybe change
-        auto comm = new CommunicationLog(nShell->shell->authorId, "IDK");
+        auto comm = new CommunicationLog(nShell->shell->authorId, "IDK", "NONE");
         auto logType = nShell->type;
         this->logPacket.add(LogPacket(nShell->type, comm, this->getCommType(logType)));
 //        auto log = this->logPacket.getLogByWriterReader(nShell->type);
@@ -235,7 +235,7 @@ CommunicationType NetworkDevice::getCommType(std::string type) {
     return NO_TYPE;
 }
 std::string NetworkDevice::getCompletePubKey() {
-    std::string meh = prefixKey;
+/*    std::string meh = prefixKey;
     for (uint32_t i = 1; i < this->publicKey.length() + 1; i++) {
         meh += this->publicKey[i - 1];
         if (i % 64  == 0) {
@@ -243,6 +243,7 @@ std::string NetworkDevice::getCompletePubKey() {
         }
     }
     meh += suffixKey;
-    return meh;
+    return meh;*/
+    return "";
 }
 

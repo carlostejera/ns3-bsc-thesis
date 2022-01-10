@@ -86,7 +86,7 @@ void User::subscribe(std::string authorId) {
 }
 
 void User::plugAndPlay() {
-    auto comm = new CommunicationLog(this->authorId, SWITCH_ALL);
+    auto comm = new CommunicationLog(this->authorId, SWITCH_ALL, this->privateKey);
 
     ContentShell *cShell = new ContentShell("plugAndPlay",this->authorId,this->authorId + " plug and play");
     comm->appendLogShell(cShell);
@@ -129,7 +129,7 @@ void User::printNetworkLog() {
 
 
 void User::pushLogToSwitch() {
-    this->myPersonalLog->appendLogShell(new ContentShell("pushContent", "", "this is my log " + to_string(this->count)));
+    this->myPersonalLog->appendLogShell(new ContentShell("pushContent", "", "Important data that is being shared (seq "+ to_string(this->count) +")"));
     this->count += 1;
     LogShell lShell = this->myPersonalLog->getLastEntry();
     LogShell *shell_p = &lShell;
