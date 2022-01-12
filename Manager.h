@@ -19,13 +19,17 @@ public:
     void processReceivedUserPacket(NetShell* netShell, Ptr<NetDevice> dev) override;
     bool concatenateEntry(NetShell* netShell);
 
-    Manager(std::string id, double errorRate, std::string privateKey) : Application() {
-        this->authorId = MANAGER_PREFIX + id;
+    Manager(std::pair<int, int> pq, double gossipInterval) : Application() {
+        RsaSignature signature(pq.first, pq.second);
+        auto pubKey = signature.generatePublicKey();
+        auto privKey = signature.generatePrivateKey();
+
+        this->authorId = MANAGER_PREFIX + to_string((int) pubKey);
         this->myType = this->authorId + "/switch:*";
-        this->privateKey = privateKey;
+        this->privateKey = privKey;
         this->myPersonalLog = new CommunicationLog(this->authorId, SWITCH_ALL, this->privateKey);
         this->myPersonalLog->initialiseLog();
-        this->publicKey = id;
+        this->publicKey = pubKey;
     }
     virtual ~Manager() {}
 

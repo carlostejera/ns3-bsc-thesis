@@ -48,7 +48,7 @@ bool Manager::concatenateEntry(NetShell* netShell) {
         // TODO: Maybe change
         this->logPacket.add(LogPacket(netShell->type, new CommunicationLog(netShell->shell->authorId,
                                                                            this->authorId,
-                                                                           "NONE"), CommunicationType::P2P_COMM));
+                                                                           -1), CommunicationType::P2P_COMM));
     }
     CommunicationLog* log = this->logPacket.getLogByWriterReader(netShell->type);
     string conc = "& concatenating entry " + to_string(netShell->shell->sequenceNum) + " to " + netShell->type + "\n";

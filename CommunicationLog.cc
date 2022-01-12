@@ -106,15 +106,20 @@ string CommunicationLog::createHash(LogShell entry) {
  * @return result of the checks
  */
 bool CommunicationLog::isSubsequentEntry(LogShell lShell) {
-    /*NetShellRSA nsr;
-    Printer printer;
-    printer.visit(lShell.shell);
-    auto p = SomeFunctions::varSplitter(lShell.authorId, ":");
-    nsr.verify(p.second, printer.str(), lShell.signature);
-    */
+
+    RsaSignature sign;
+    std::string::size_type sz;
+    double signature = std::stod(lShell.signature, &sz);
+
+    auto x = SomeFunctions::varSplitter(lShell.authorId, ":");
+    std::string::size_type sz2;
+    auto publicKey = std::stod(x.second, &sz2);
+    auto verification =  sign.verify(signature, publicKey);
+    verification = round(verification);
+
     return ((this->log.empty() && lShell.sequenceNum == 0)
     ||
-    (this->getCurrentSeqNum() + 1 == lShell.sequenceNum && this->createHash(this->getLastEntry()) == lShell.prevEventHash && this->owner == lShell.authorId)
+    (this->getCurrentSeqNum() + 1 == lShell.sequenceNum && this->createHash(this->getLastEntry()) == lShell.prevEventHash && this->owner == lShell.authorId && verification == lShell.sequenceNum)
     );
 }
 /**
@@ -139,18 +144,14 @@ const std::string & CommunicationLog::getOwner() const {
  * @param contentShell new content to append as LogShell
  */
 void CommunicationLog::appendLogShell(ContentShell* contentShell) {
-   /* Printer stringAssembler;
-    stringAssembler.visit(contentShell);
-    string contentString = stringAssembler.str();
-    stringAssembler.clearOss();
-    NetShellRSA nrs;
-    std::string signature = nrs.sign(this->privKey, contentString);
+    RsaSignature rsa;
 
-    // Because of the == at the end
-    signature.pop_back();
-    signature.pop_back();*/
+    auto signedMsg = rsa.sign(this->getCurrentSeqNum() + 1, this->privKey);
+    std::ostringstream oss;
+    oss << std::fixed << std::setprecision(20) << signedMsg;
+
     auto hash = this->log.empty() ? "" : this->createHash(this->getLastEntry());
-    this->log.push_back(LogShell(to_string(Simulator::Now().GetSeconds()), this->getCurrentSeqNum() + 1, hash, this->owner, "", contentShell));
+    this->log.push_back(LogShell(to_string(Simulator::Now().GetSeconds()), this->getCurrentSeqNum() + 1, hash, this->owner, oss.str(), contentShell));
 }
 bool CommunicationLog::empty() {
     return this->log.empty();

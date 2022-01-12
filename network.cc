@@ -24,6 +24,16 @@ std::vector<std::string> files {
     "./scratch/ns3-bsc-thesis/keys/5",
     };
 
+std::vector<pair<int, int>> primeNumberPairs {
+    {19, 11},
+    {5, 11},
+    {5, 7},
+    {19, 7},
+    {3, 5},
+    {3, 11},
+    {13, 11},
+};
+
 std::string readFile(std::string path, bool with) {
     string line;
     string output = "";
@@ -55,9 +65,9 @@ void addApplicationToNodes(Ptr<T>* apps, NodeContainer nodes, uint32_t beginFrom
 
 
     for (uint32_t i = 0; i < nodes.GetN(); i++) {
-//        auto privKey = readFile(files.at(c) + "/priv.txt", true);
+        auto keys = primeNumberPairs.at(c);
 //        auto pubKey = readFile(files.at(c) + "/pub.txt", false);
-        apps[i] = Create<T>(to_string(beginFrom + i), gossipInterval, "");
+        apps[i] = Create<T>(keys, gossipInterval);
         nodes.Get(i)->AddApplication(apps[i]);
         c++;
     }
@@ -305,7 +315,7 @@ void nodesSetup(const uint32_t userNumbers,
         user_apps[i]->SetStartTime(Seconds(USER_JOINING));
     }
     Simulator::Schedule(Seconds(ENABLE_ERROR_RATE), &enablePacketLoss, em);
-    Simulator::Schedule(Seconds(USER0_SUBSCRIBING_USER1), &User::subscribe, user_apps[0], "user:1");
+    Simulator::Schedule(Seconds(USER0_SUBSCRIBING_USER1), &User::subscribe, user_apps[0], "user:39");
 
     int packetNum = 10;
     int i = 0;

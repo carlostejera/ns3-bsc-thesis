@@ -58,6 +58,7 @@ void NetworkDevice::printNetworkLog() {
     Printer stringAssembler;
     ostringstream oss;
     oss << "-----" << "Device ID: " << this->authorId << "-----" << endl;
+    oss << "privKey: " << this->privateKey << endl;
     oss << "All logs: " << endl;
     oss << this->logPacket.toString() << endl;
 
@@ -132,7 +133,7 @@ bool NetworkDevice::logExists(NetShell* nShell) {
 bool NetworkDevice::concatenateEntry(NetShell* nShell) {
     if (!this->logExists(nShell)) {
         // TODO: Maybe change
-        auto comm = new CommunicationLog(nShell->shell->authorId, "IDK", "NONE");
+        auto comm = new CommunicationLog(nShell->shell->authorId, "IDK", -1);
         auto logType = nShell->type;
         this->logPacket.add(LogPacket(nShell->type, comm, this->getCommType(logType)));
 

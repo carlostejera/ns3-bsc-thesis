@@ -27,11 +27,15 @@ public:
 
 
 
-    User(std::string id, double errorRate, std::string privateKey) : Application() {
-        this->authorId = USER_PREFIX + id;
-        this->privateKey = privateKey;
+    User(std::pair<int, int> pq, double gossipInterval) : Application() {
+        RsaSignature signature(pq.first, pq.second);
+        auto pubKey = signature.generatePublicKey();
+        auto privKey = signature.generatePrivateKey();
+
+        this->authorId = USER_PREFIX + to_string((int) pubKey);
+        this->privateKey = privKey;
         this->myPersonalLog = new CommunicationLog(this->authorId, USER_ALL, this->privateKey);
-        this->publicKey = id;
+        this->publicKey = pubKey;
     }
     virtual ~User() {}
 

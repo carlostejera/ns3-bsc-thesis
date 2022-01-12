@@ -34,11 +34,17 @@ struct EthSwitch : public Application, public NetworkDevice {
     bool forwardDeletion(NetShell *nShell);
     double gossipInterval;
 
-    EthSwitch(std::string authorId, double gossipInterval, std::string privateKey) {
-        this->authorId = SWITCH_PREFIX + authorId;
+    EthSwitch(std::pair<int, int> pq, double gossipInterval) {
+
+        RsaSignature signature(pq.first, pq.second);
+        auto pubKey = signature.generatePublicKey();
+        auto privKey = signature.generatePrivateKey();
+
+
+        this->authorId = SWITCH_PREFIX + to_string((int) pubKey);
         this->gossipInterval = gossipInterval;
-        this->privateKey = privateKey;
-        this->publicKey = authorId;
+        this->privateKey = privKey;
+        this->publicKey = pubKey;
     }
     virtual ~EthSwitch() {}
     virtual void StartApplication(void) {

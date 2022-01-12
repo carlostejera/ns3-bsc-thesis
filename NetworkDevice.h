@@ -22,8 +22,8 @@ protected:
     CommunicationLog* myPersonalLog = nullptr;
     string name;
     double timer;
-    std::string privateKey;
-    std::string publicKey;
+    double privateKey;
+    double publicKey;
 
 
     string readPacket(Ptr<const Packet> packet);

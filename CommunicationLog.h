@@ -19,10 +19,10 @@ class CommunicationLog {
     std::string owner;
     vector<LogShell> log;
     std::string dedicated;
-    std::string privKey;
+    double privKey;
   public:
 
-    CommunicationLog(std::string owner, std::string dedicated, std::string privKey) {
+    CommunicationLog(std::string owner, std::string dedicated, double privKey) {
         this->owner = owner;
         this->dedicated = dedicated;
         this->privKey = privKey;
