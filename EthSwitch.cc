@@ -102,6 +102,11 @@ void EthSwitch::sendPlugAndPlayConfirmation(Ptr<NetDevice> dev, std::string auth
     this->sendPacket(dev, p);
 }
 
+
+/**
+ * Gets a list from the subscriptions and chooses a log randomly. Logs can have been initialised, but being empty.
+ * If it is empty, it simulates an entry in order to receive the updated, if there are.
+ */
 void EthSwitch::gossip() {
 
     // Choose a random log to gossip about
@@ -117,18 +122,14 @@ void EthSwitch::gossip() {
             auto cShell = new ContentShell("f", "p", "I have no content");
             auto lShell = new LogShell(to_string(Simulator::Now().GetSeconds()), -1, "", this->manager.first, "", cShell);
             nShell = new NetShell(entry.first, randomLogType, 1, 0, lShell);
-//            if (entry.first != this->manager.first) {
                 auto packet = this->createPacket(nShell);
                 this->sendPacket(entry.second, packet);
-//            }
         } else {
             LogShell tmp = log->getLastEntry();
             LogShell* p = &tmp;
             nShell = new NetShell(entry.first, randomLogType, 1, 0, p);
-//            if (entry.first != this->manager.first) {
                 auto packet = this->createPacket(nShell);
                 this->sendPacket(entry.second, packet);
-//            }
         }
     }
     // This will be triggered <gossipInterval> seconds later
@@ -168,63 +169,53 @@ void EthSwitch::recvPkt(
 
     this->packetOss << "------------------SwitchPacket-------------------" << endl
         << "i am " << this->authorId << endl;
-
-
     this->packetOss << "Received: " << netShell << endl;
     this->packetOss << "From: " << ns3::Mac48Address::ConvertFrom(dev->GetAddress()) << endl;
     this->packetOss << "Result: ";
 
     // Checks if it is the receiver
-    if (true) {
-        if (nShell->type.find("/manager") != string::npos) {
-            this->packetOss << "Dropping packet" << endl;
+    if (nShell->type.find("/manager") != string::npos) {
+        this->packetOss << "Dropping packet" << endl;
 
-        } else if (nShell->type.find("/switch:") != string::npos) {
-            // Check if it is the manager and if it is not already assigned
-            if (nShell->type.find(MANAGER_PREFIX) != string::npos && !this->isManagerAssigned) {
-                auto p = SomeFunctions::varSplitter(nShell->type, "/");
-                this->manager = {p.first, dev};
-                this->isManagerAssigned = true;
-                Simulator::Schedule(Seconds(this->gossipInterval), &EthSwitch::gossip, this);
-            }
-            if (this->processReceivedSwitchPacket(nShell, dev)) {
-                auto lastEntry = this->logPacket.getLogByWriterReader(nShell->type)->getLastEntry();
-                //Dropping packet if this switch is not the receiver
-//                CommunicationLog *cLog;
-                switch (this->hash(lastEntry.shell->function)) {
-                    case ADD_MEMBER_TO_NETWORK:this->addMemberToNetwork(lastEntry.shell->params);
-                        break;
-                    case PLUG_AND_PLAY:this->sendPlugAndPlayConfirmation(dev, nShell->shell->authorId);
-                        break;
-                    case GET_CONTENT_FROM:
-                        // Somebody is interested in a log, so am I
-                        this->interestedNeighbours.insert({nShell->shell->shell->params, this->getKeyByValue(dev)});
-                        this->broadcastToNeighbours(dev, nShell);
-                        this->packetOss << "& and forwarding request";
-                        break;
-                    case UNSUBSCRIBE_USER:
-                        // handle unsubscription
-                        this->removeUserFromInl(nShell->shell->authorId, nShell->shell->shell->params, nShell, dev);
-                        break;
-                    default:break;
-                }
-            } else {
-            }
-
-        } else if (nShell->type.find("/user") != string::npos) {
-            this->processReceivedUserPacket(nShell, dev);
-
-        } else {
-            this->packetOss << "Dropping unknown packet";
+    } else if (nShell->type.find("/switch:") != string::npos) {
+        // Check if it is the manager and if it is not already assigned
+        if (nShell->type.find(MANAGER_PREFIX) != string::npos && !this->isManagerAssigned) {
+            auto p = SomeFunctions::varSplitter(nShell->type, "/");
+            this->manager = {p.first, dev};
+            this->isManagerAssigned = true;
+            Simulator::Schedule(Seconds(this->gossipInterval), &EthSwitch::gossip, this);
         }
+        if (this->processReceivedSwitchPacket(nShell, dev)) {
+            auto lastEntry = this->logPacket.getLogByWriterReader(nShell->type)->getLastEntry();
+            //Dropping packet if this switch is not the receiver
+//                CommunicationLog *cLog;
+            switch (this->hash(lastEntry.shell->function)) {
+                case ADD_MEMBER_TO_NETWORK:this->addMemberToNetwork(lastEntry.shell->params);
+                    break;
+                case PLUG_AND_PLAY:this->sendPlugAndPlayConfirmation(dev, nShell->shell->authorId);
+                    break;
+                case GET_CONTENT_FROM:
+                    // Somebody is interested in a log, so am I
+                    this->interestedNeighbours.insert({nShell->shell->shell->params, this->getKeyByValue(dev)});
+                    this->broadcastToNeighbours(dev, nShell);
+                    this->packetOss << "& and forwarding request";
+                    break;
+                case UNSUBSCRIBE_USER:
+                    // handle unsubscription
+                    this->removeUserFromInl(nShell->shell->authorId, nShell->shell->shell->params, nShell, dev);
+                    break;
+                default:break;
+            }
+        } else {
+        }
+
+    } else if (nShell->type.find("/user") != string::npos) {
+        this->processReceivedUserPacket(nShell, dev);
+
     } else {
-        // Gossip answer
-/*        if (this->subscriptionExists(nShell->type) && this->isGossipEntryOlder(nShell)) {
-            this->sendEntryFromIndexTo(this->getLogFrom(nShell->type), this->getKeyByValue(dev),
-                                       nShell->shell->sequenceNum, nShell->type);
-            this->packetOss << "Answering to gossip" << endl;
-        }*/
+        this->packetOss << "Dropping unknown packet";
     }
+
     this->packetOss << "----------------SwitchPacket_END----------------\n" << endl;
     if (VERBOSE) {
         if(nShell->flag == 1) {
