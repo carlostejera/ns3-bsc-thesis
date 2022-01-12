@@ -6,21 +6,22 @@
 using namespace ns3;
 using namespace std;
 /**
- * Switch tries to join the network by asking for the manager
+ * To be added by the manager, the switch creates a new log where the manager is addressed. The newest logShell gets
+ * extracted and sent to the manager via flooding
  */
 
 void EthSwitch::requestJoiningNetwork() {
     CommunicationLog* log = new CommunicationLog(this->authorId, MANAGER_ALL, this->privateKey);
-
     ContentShell *cShell = new ContentShell(ADD_USER_TO_NETWORK,this->authorId,this->authorId + " wants to join the network");
+
     log->appendLogShell(cShell);
     LogShell lShell = log->getLastEntry();
     LogShell* lShell_p = &lShell;
+
     string commLog = LOGTYPE(this->authorId, MANAGER_ALL);
     NetShell *nShell = new NetShell(MANAGER_ALL, commLog, 0, 0, lShell_p);
     this->logPacket.add(LogPacket(commLog, log, CommunicationType::P2P_COMM));
-//    this->communicationLogs.insert({commLog, log});
-    // Broadcast that the user wants to join the network (simulating via uni-cast)
+
     for (uint32_t i = 0; i < GetNode()->GetNDevices(); ++i) {
         Ptr <Packet> p = this->createPacket(nShell);
         Ptr <NetDevice> dev = GetNode()->GetDevice(i);
@@ -30,18 +31,29 @@ void EthSwitch::requestJoiningNetwork() {
     }
 }
 
-
+/**
+ * Assigning the manager in a std::pair
+ * @param dev the mac of the manager
+ * @param manager the id
+ */
 void EthSwitch::assignManager(Ptr<NetDevice> dev, std::string manager) {
     this->manager = {manager, dev};
     this->packetOss << "& assigning manager " << endl;
     this->isManagerAssigned = true;
 }
 
+/**
+ * Function that can be requested by the manager. It adds new arriving switches
+ * @param params id of arriving switch
+ */
 void EthSwitch::addMemberToNetwork(string params) {
     std::string  authorId = params;
     this->familyMembers.push_back(authorId);
 }
 
+/**
+ * Final print out to
+ */
 void EthSwitch::printNetworkLog() {
     NetworkDevice::printNetworkLog();
     ostringstream oss;
@@ -66,8 +78,8 @@ void EthSwitch::printNetworkLog() {
 
 /**
  * Answering the user about its connection to the switch
- * @param dev
- * @param authorId
+ * @param dev The "port" where the device has to answer
+ * @param authorId id of the recipient
  */
 void EthSwitch::sendPlugAndPlayConfirmation(Ptr<NetDevice> dev, std::string authorId) {
     string logName = this->authorId + "/" + authorId;
@@ -124,7 +136,15 @@ void EthSwitch::gossip() {
 }
 
 
-
+/**
+ * Handling the receiving packets
+ * @param dev device MAC address
+ * @param packet the netshell
+ * @param proto -
+ * @param from -
+ * @param to -
+ * @param pt -
+ */
 void EthSwitch::recvPkt(
         Ptr <NetDevice> dev,
         Ptr<const Packet> packet,
@@ -216,7 +236,13 @@ void EthSwitch::recvPkt(
     this->packetOss.str("");
 }
 
-void EthSwitch::forward(Ptr<NetDevice> dev, NetShell* nShell, uint8_t hops) {
+/**
+ * Forwards the netshells to the interested neighbours
+ * @param dev dev not to send to
+ * @param nShell nShell to send
+ */
+
+void EthSwitch::forward(Ptr<NetDevice> dev, NetShell *nShell) {
     typedef multimap<string, std::string>::iterator MMAPIterator;
     auto p = SomeFunctions::varSplitter(nShell->type, "/");
     auto subscribed = p.first;
@@ -234,7 +260,12 @@ void EthSwitch::forward(Ptr<NetDevice> dev, NetShell* nShell, uint8_t hops) {
         this->sendPacket(newDev, p);
     }
 }
-
+/**
+ * Process incoming switch packets
+ * @param nShell
+ * @param dev
+ * @return
+ */
 bool EthSwitch::processReceivedSwitchPacket(NetShell *nShell, Ptr <NetDevice> dev) {
     // Check if receiver
     auto shellParam = nShell->shell->shell->params;
@@ -262,6 +293,11 @@ bool EthSwitch::processReceivedSwitchPacket(NetShell *nShell, Ptr <NetDevice> de
     return this->concatenateEntry(nShell);
 }
 
+/**
+ * Process packets from user
+ * @param nShell
+ * @param dev
+ */
 void EthSwitch::processReceivedUserPacket(NetShell *nShell, Ptr <NetDevice> dev) {
     std::string& shellFunction = nShell->shell->shell->function;
     std::string& shellParam = nShell->shell->shell->params;
@@ -290,7 +326,7 @@ void EthSwitch::processReceivedUserPacket(NetShell *nShell, Ptr <NetDevice> dev)
                 if (!this->interestExists(nShell->shell->authorId, this->getKeyByValue(dev))) {
                     this->interestedNeighbours.insert({nShell->shell->authorId, this->getKeyByValue(dev)});
                 }
-                this->forward(dev, nShell, ++nShell->hops);
+                this->forward(dev, nShell);
             }
         }
     } else {
@@ -303,7 +339,11 @@ void EthSwitch::processReceivedUserPacket(NetShell *nShell, Ptr <NetDevice> dev)
         }
     }
 }
-
+/**
+ * Floods packets to the neighbours where also new logs are created which are dedicated to them
+ * @param dev
+ * @param nShell
+ */
 void EthSwitch::broadcastToNeighbours(Ptr <NetDevice> dev, NetShell *nShell) {
     for (auto entry : this->neighbourMap) {
         auto neighbourId = entry.first;
@@ -338,6 +378,15 @@ CommunicationLog *EthSwitch::getLogFrom(string type) {
 
     return this->logPacket.getLogByWriterReader(type);
 }
+
+/**
+ * Remove user from interested list. If no user is anymore interested, also the interests of the switches are deleted,
+ * since there is no need.
+ * @param canceller
+ * @param subscription
+ * @param nShell
+ * @param dev
+ */
 void EthSwitch::removeUserFromInl(std::string canceller,
                                   std::string subscription,
                                   NetShell *nShell,
@@ -369,6 +418,13 @@ void EthSwitch::removeUserFromInl(std::string canceller,
         }
     }
 }
+
+/**
+ * Check if an interest exists
+ * @param subscription
+ * @param subscriber
+ * @return
+ */
 bool EthSwitch::interestExists(std::string subscription, std::string subscriber) {
     typedef multimap<std::string, std::string>::iterator iter;
     std::pair<iter, iter> iterpair = this->interestedNeighbours.equal_range(subscription);
@@ -383,6 +439,12 @@ bool EthSwitch::interestExists(std::string subscription, std::string subscriber)
 
     return false;
 }
+
+/**
+ * Forward function for the deletion
+ * @param nShell
+ * @return
+ */
 bool EthSwitch::forwardDeletion(NetShell *nShell) {
 
     auto cShell = nShell->shell->shell;
