@@ -42,15 +42,15 @@ struct LogPacket {
 
     const std::string toString() {
         ostringstream oss;
-        oss << "////////////////////////////////////////" << endl;
+//        oss << "////////////////////////////////////////" << endl;
         oss << "\033[1;" << "36" << "m";
-        oss << "LOG PACKET (" << enumsToString(this->logType) << ", LOG: " << this->writerReader << ")";
-        oss << "\033[0m\n";
-
-        oss << "\033[1;" << "34" << "m";
-        oss << log->getLogAsString();
+        oss << "LOG(" << enumsToString(this->logType) << ", LOG: " << this->writerReader << " SEQ:" << this->getLog()->getCurrentSeqNum() << ")";
         oss << "\033[0m";
-        oss << "////////////////////////////////////////" << endl;
+
+//        oss << "\033[1;" << "34" << "m";
+//        oss << log->getLogAsString();
+//        oss << "\033[0m";
+//        oss << "////////////////////////////////////////" << endl;
         return oss.str();
     }
 

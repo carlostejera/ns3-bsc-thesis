@@ -58,23 +58,21 @@ void NetworkDevice::printNetworkLog() {
     Printer stringAssembler;
     ostringstream oss;
     oss << "-----" << "Device ID: " << this->authorId << "-----" << endl;
-    oss << "All the fucking logs: " << endl;
-
+    oss << "All logs: " << endl;
     oss << this->logPacket.toString() << endl;
 
-    oss << "My personal log: " << endl;
-
     if (this->myPersonalLog != nullptr){
+        oss << "My personal log: " << endl;
         oss << this->myPersonalLog->getLogAsString() << endl;
     }
-
-    oss << endl << "Neighbours: " << endl;
+    oss << "////////////////////////////////////////" << endl;
+    oss << endl << "NEIGHBOURS: " << endl;
     for (auto iter = this->neighbourMap.begin(); iter != this->neighbourMap.end(); iter++) {
         auto authorId = iter->first;
         auto nDev = iter->second;
         oss << authorId << ": " << ns3::Mac48Address::ConvertFrom(nDev->GetAddress()) << endl;
     }
-    oss << "Family member:" << endl;
+    oss << "NETWORK MEMBERS:" << endl;
     for (auto member : this->familyMembers) {
         oss << member << endl;
     }

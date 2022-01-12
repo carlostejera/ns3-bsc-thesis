@@ -108,13 +108,6 @@ void User::printNetworkLog() {
     ostringstream oss;
     Printer stringAssembler;
     NetworkDevice::printNetworkLog();
-    oss << "-------User " << this->authorId << "-------" << endl;
-    oss << "My Log: " << endl;
-    for (auto lShell : this->myPersonalLog->getLog()) {
-        stringAssembler.visit(&lShell);
-        oss << stringAssembler.str() << endl;
-        stringAssembler.clearOss();
-    }
     oss << "Connected Switches: " << endl;
     for (auto item : this->neighbourMap) {
         oss << item.first << endl;
