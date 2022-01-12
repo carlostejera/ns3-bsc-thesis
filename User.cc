@@ -11,10 +11,9 @@ User::recvPkt(Ptr <NetDevice> dev, Ptr<const Packet> packet, uint16_t proto, con
         << "i am " << this->authorId << endl;
 
     string netShell = this->readPacket(packet);
-    NetShell *nShell = SomeFunctions::shell(netShell);
+    NetShell *nShell = Parser::shell(netShell);
     oss << "Received: " << netShell << endl;
     oss << "Result: ";
-    cout << "Received: " << netShell << endl;
 
     if (this->isNeighbourToAdd(this->getKeyByValue(dev), nShell->hops)) {
         this->addNeighbour(nShell->shell->authorId, dev);
@@ -40,7 +39,6 @@ User::recvPkt(Ptr <NetDevice> dev, Ptr<const Packet> packet, uint16_t proto, con
 
                     }*/
                 default:
-                    cout << "choking" << endl;
                     std::string senderId;
                     // gossip answer
                     if(nShell->type != this->authorId + "/user:*") {
@@ -155,7 +153,6 @@ void User::unsubscribe(std::string authorId) {
         auto p = this->createPacket(nShell);
         this->sendPacket(dev, p);
     }
-    cout << "I am unsubscribing" << endl;
     this->removeSubscription(authorId);
 
 }

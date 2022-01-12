@@ -88,7 +88,7 @@ void NetworkDevice::sendEntryFromIndexTo(CommunicationLog* log, std::string rece
     }
 
     if (log == NULL) {
-        cout << "no log yet" << endl;
+        this->packetOss << "no log yet" << endl;
         return;
     }
     seqFrom = seqFrom == -1 ? 0 : seqFrom;
@@ -114,7 +114,7 @@ std::string NetworkDevice::getKeyByValue(Ptr<NetDevice> senderDev) {
         }
     }
 
-    cout << "something went wrong" << endl;
+    this->packetOss << "& something went wrong" << endl;
     return "-1";
 }
 
@@ -130,13 +130,16 @@ bool NetworkDevice::logExists(NetShell* nShell) {
     return this->logPacket.exists(nShell->type);
 }
 
+/**
+ * Checks first if the log exist before going the the actual concatenating.
+ * @param nShell received netshell
+ * @return if packet got concatenated
+ */
 bool NetworkDevice::concatenateEntry(NetShell* nShell) {
     if (!this->logExists(nShell)) {
-        // TODO: Maybe change
-        auto comm = new CommunicationLog(nShell->shell->authorId, "IDK", -1);
+        auto comm = new CommunicationLog(nShell->shell->authorId, "*", -1);
         auto logType = nShell->type;
         this->logPacket.add(LogPacket(nShell->type, comm, this->getCommType(logType)));
-
     }
 
     return this->isEntryConcatenated(nShell);
@@ -169,6 +172,7 @@ void NetworkDevice::addNeighbour(std::string authorId, Ptr<NetDevice> dev) {
 }
 
 void NetworkDevice::printPacketResult() {
+    cout << this->packetOss.str();
     this->packetOss.str("");
 
 }
@@ -209,17 +213,5 @@ CommunicationType NetworkDevice::getCommType(std::string type) {
     if (type.find(USER_ALL) != std::string::npos) return CommunicationType::SUBSCRIPTION;
     if (type.find(SWITCH_PREFIX) != std::string::npos && type.find(this->authorId) != std::string::npos) return SWITCH_SWITCH_COMM;
     return NO_TYPE;
-}
-std::string NetworkDevice::getCompletePubKey() {
-/*    std::string meh = prefixKey;
-    for (uint32_t i = 1; i < this->publicKey.length() + 1; i++) {
-        meh += this->publicKey[i - 1];
-        if (i % 64  == 0) {
-            meh += "\n";
-        }
-    }
-    meh += suffixKey;
-    return meh;*/
-    return "";
 }
 

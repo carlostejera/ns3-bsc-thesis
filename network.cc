@@ -32,41 +32,20 @@ std::vector<pair<int, int>> primeNumberPairs {
     {3, 5},
     {3, 11},
     {13, 11},
+    {7, 11},
+    {7, 13},
 };
 
-std::string readFile(std::string path, bool with) {
-    string line;
-    string output = "";
-    ifstream myfile (path);
-    if (myfile.is_open())
-    {
-        while ( getline (myfile,line) )
-        {
-            cout << line << endl;
-            if (with) {
-                output += line + "\n";
-            } else {
-                output += line;
-            }
-        }
-        myfile.close();
-    }
-    return output;
-}
 void errorSettings(const double errorRate) {
     Config::SetDefault ("ns3::RateErrorModel::ErrorRate", DoubleValue (errorRate));
     Config::SetDefault ("ns3::RateErrorModel::ErrorUnit", StringValue ("ERROR_UNIT_PACKET"));
-
-//    Config::SetDefault ("ns3::BurstErrorModel::BurstSize", StringValue ("ns3::UniformRandomVariable[Min=1|Max=4]"));
 }
 
 template <class T>
 void addApplicationToNodes(Ptr<T>* apps, NodeContainer nodes, uint32_t beginFrom, double gossipInterval) {
 
-
     for (uint32_t i = 0; i < nodes.GetN(); i++) {
         auto keys = primeNumberPairs.at(c);
-//        auto pubKey = readFile(files.at(c) + "/pub.txt", false);
         apps[i] = Create<T>(keys, gossipInterval);
         nodes.Get(i)->AddApplication(apps[i]);
         c++;
@@ -267,7 +246,7 @@ void nodesSetup(const uint32_t userNumbers,
     }*/
 
 
-//    p2p.EnablePcapAll ("myNetworkPcaps");
+    p2p.EnablePcapAll ("myNetworkPcaps");
     ////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////

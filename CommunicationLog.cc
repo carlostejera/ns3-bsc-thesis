@@ -65,6 +65,7 @@ vector<LogShell> CommunicationLog::getLog() {
 string CommunicationLog::getLogAsString() {
     Printer printer;
     ostringstream oss;
+    oss << "owner: " << this->owner << " dedicated: " << this->dedicated << endl;
     for (auto log: this->log) {
         printer.visit(&log);
         oss << printer.str() << endl;
@@ -111,7 +112,7 @@ bool CommunicationLog::isSubsequentEntry(LogShell lShell) {
     std::string::size_type sz;
     double signature = std::stod(lShell.signature, &sz);
 
-    auto x = SomeFunctions::varSplitter(lShell.authorId, ":");
+    auto x = Parser::varSplitter(lShell.authorId, ":");
     std::string::size_type sz2;
     auto publicKey = std::stod(x.second, &sz2);
     auto verification =  sign.verify(signature, publicKey);

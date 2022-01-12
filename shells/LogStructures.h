@@ -31,14 +31,9 @@ static constexpr const char* N_SHELL = "nShell=(";
 static constexpr const char* L_SHELL = "lShell=(";
 static constexpr const char* C_SHELL = "cShell=(";
 
-static constexpr const char* REQUEST = "request";
-static constexpr const char* DIARY = "diary";
-static constexpr const char* LOG_ENTRY = "logEntry";
 static constexpr const char* ADD_MEMBER = "addMemberToNetwork";
 
 static constexpr const char* ASSIGN_MANAGER = "assignManager";
-static constexpr const char* GOSSIP = "gossip";
-
 
 static constexpr const char* UNSUBSCRIBE = "removeUserFromInl";
 
@@ -52,9 +47,7 @@ static constexpr const char* USER_RECEIVER = *("/") + USER_PREFIX;
 static constexpr const char* USER_ALL = "user:*";
 static constexpr const char* SWITCH_ALL = "switch:*";
 static constexpr const char* MANAGER_ALL = "manager:*";
-static constexpr const char* ADD_USER_TO_NETWORK = "addToNetwork";
-//static std::string prefixKey = "-----BEGIN PUBLIC KEY-----\n";
-//static std::string suffixKey = "-----END RSA PRIVATE KEY-----";
+static constexpr const char* ADD_SWITCH_TO_NETWORK = "addToNetwork";
 
 
 
@@ -144,7 +137,7 @@ struct NetShell : public Shell {
 };
 
 
-struct SomeFunctions {
+struct Parser {
     static pair <string, string> varSplitter(string s, string del = "=") {
         int start = 0;
         int end = s.find(del);

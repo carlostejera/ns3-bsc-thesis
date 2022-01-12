@@ -49,8 +49,7 @@ protected:
     void printBlack(std::string output);
     bool subscriptionExists(std::string subscription);
     CommunicationType getCommType(std::string type);
-    std::string getCompletePubKey();
-//    std::string type(std::string)
+    //    std::string type(std::string)
 
 //    bool isSubsequentContent();
 

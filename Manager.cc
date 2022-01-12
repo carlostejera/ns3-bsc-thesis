@@ -72,7 +72,7 @@ void Manager::recvPkt(
         << "Manager: " << this->authorId << endl;
 
     string netShell = this->readPacket(packet);
-    NetShell* nShell = SomeFunctions::shell(netShell);
+    NetShell* nShell = Parser::shell(netShell);
 
     this->packetOss << "Received: " << netShell << endl;
     this->packetOss << "Result: ";

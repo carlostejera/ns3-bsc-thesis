@@ -12,7 +12,7 @@ using namespace std;
 
 void EthSwitch::requestJoiningNetwork() {
     CommunicationLog* log = new CommunicationLog(this->authorId, MANAGER_ALL, this->privateKey);
-    ContentShell *cShell = new ContentShell(ADD_USER_TO_NETWORK,this->authorId,this->authorId + " wants to join the network");
+    ContentShell *cShell = new ContentShell(ADD_SWITCH_TO_NETWORK, this->authorId, this->authorId + " wants to join the network");
 
     log->appendLogShell(cShell);
     LogShell lShell = log->getLastEntry();
@@ -158,7 +158,7 @@ void EthSwitch::recvPkt(
     string netShell = this->readPacket(packet);
 
     // Transforms the string to a net shell object
-    NetShell* nShell = SomeFunctions::shell(netShell);
+    NetShell* nShell = Parser::shell(netShell);
 
 
 
@@ -180,7 +180,7 @@ void EthSwitch::recvPkt(
     } else if (nShell->type.find("/switch:") != string::npos) {
         // Check if it is the manager and if it is not already assigned
         if (nShell->type.find(MANAGER_PREFIX) != string::npos && !this->isManagerAssigned) {
-            auto p = SomeFunctions::varSplitter(nShell->type, "/");
+            auto p = Parser::varSplitter(nShell->type, "/");
             this->manager = {p.first, dev};
             this->isManagerAssigned = true;
             Simulator::Schedule(Seconds(this->gossipInterval), &EthSwitch::gossip, this);
@@ -235,7 +235,7 @@ void EthSwitch::recvPkt(
 
 void EthSwitch::forward(Ptr<NetDevice> dev, NetShell *nShell) {
     typedef multimap<string, std::string>::iterator MMAPIterator;
-    auto p = SomeFunctions::varSplitter(nShell->type, "/");
+    auto p = Parser::varSplitter(nShell->type, "/");
     auto subscribed = p.first;
     // Check which is the subscription devices are interested in
     pair<MMAPIterator, MMAPIterator> result = this->interestedNeighbours.equal_range(subscribed);
@@ -297,7 +297,7 @@ void EthSwitch::processReceivedUserPacket(NetShell *nShell, Ptr <NetDevice> dev)
     // Switches/Users need the content of a user
     if (nShell->flag == 0) {
         if (this->hash(shellFunction) == GET_CONTENT_FROM) {
-            auto p = SomeFunctions::varSplitter(nShell->type, "/");
+            auto p = Parser::varSplitter(nShell->type, "/");
 
             this->interestedNeighbours.insert({p.second, this->getKeyByValue(dev)});
             // Target is here
@@ -337,6 +337,10 @@ void EthSwitch::processReceivedUserPacket(NetShell *nShell, Ptr <NetDevice> dev)
  */
 void EthSwitch::broadcastToNeighbours(Ptr <NetDevice> dev, NetShell *nShell) {
     for (auto entry : this->neighbourMap) {
+/*        // Not broadcasting to user
+        if (std::find(this->familyMembers.begin(), this->familyMembers.end(), entry.first) == this->familyMembers.end()){
+            continue;
+        }*/
         auto neighbourId = entry.first;
         auto newReceiverDev = entry.second;
         auto logType = LOGTYPE(this->authorId, neighbourId);
