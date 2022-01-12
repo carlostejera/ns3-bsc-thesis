@@ -325,10 +325,10 @@ void EthSwitch::broadcastToNeighbours(Ptr <NetDevice> dev, NetShell *nShell) {
             this->logPacket.getLogByWriterReader(logType)->appendLogShell(nShell->shell->shell);
             LogShell tmp = this->logPacket.getLogByWriterReader(logType)->getLastEntry();
             LogShell* lShell_p = &tmp;
-            nShell = new NetShell(neighbourId, logType, 0, 0, lShell_p);
+            auto newNShell = new NetShell(neighbourId, logType, 0, 0, lShell_p);
 
 
-            auto p = this->createPacket(nShell);
+            auto p = this->createPacket(newNShell);
             this->sendPacket(newReceiverDev, p);
         }
     }
