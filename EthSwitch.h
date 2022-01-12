@@ -17,7 +17,7 @@ struct EthSwitch : public Application, public NetworkDevice {
     void addMemberToNetwork(string params);
     void assignManager(Ptr<NetDevice> dev, std::string manager);
     void broadcastToNeighbours(Ptr<NetDevice> dev, NetShell* nShell);
-    void forward(Ptr<NetDevice>, NetShell*, uint8_t hops);
+    void forward(Ptr<NetDevice>, NetShell*);
     CommunicationLog* getLogFrom(string type);
     void gossip();
     void printNetworkLog() override;
