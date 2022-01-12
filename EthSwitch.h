@@ -9,28 +9,42 @@ using namespace std;
 
 
 struct EthSwitch : public Application, public NetworkDevice {
-    pair<int8_t, Ptr<NetDevice>> manager;
+    pair<std::string, Ptr<NetDevice>> manager;
     bool isManagerAssigned = false;
-    vector<int8_t> connectedUser;
-    multimap<string, int8_t> interestedNeighbours;
+    vector<std::string> connectedUser;
+    multimap<std::string, std::string> interestedNeighbours;
 
     void addMemberToNetwork(string params);
-    void assignManager(Ptr<NetDevice>, int8_t);
+    void assignManager(Ptr<NetDevice> dev, std::string manager);
     void broadcastToNeighbours(Ptr<NetDevice> dev, NetShell* nShell);
-    void forward(Ptr<NetDevice>, NetShell*, uint8_t hops);
+    void forward(Ptr<NetDevice>, NetShell*);
     CommunicationLog* getLogFrom(string type);
     void gossip();
-    bool isInList(vector <int8_t> v, int8_t authorId);
     void printNetworkLog() override;
     bool processReceivedSwitchPacket(NetShell* nShell, Ptr<NetDevice> dev) override;
     void processReceivedUserPacket(NetShell* nShell, Ptr<NetDevice> dev) override;
     void recvPkt(Ptr<NetDevice> dev, Ptr<const Packet> packet, uint16_t proto, const Address& from, const Address& to, NetDevice::PacketType pt );
     void requestJoiningNetwork();
-    void sendPlugAndPlayConfirmation(Ptr<NetDevice>, int8_t);
+    void sendPlugAndPlayConfirmation(Ptr<NetDevice> dev, std::string authorId);
+    void removeUserFromInl(std::string canceller,
+                           std::string subscription,
+                           NetShell *nShell,
+                           Ptr<NetDevice> dev);
+    bool interestExists(std::string subscription, std::string subscriber);
+    bool forwardDeletion(NetShell *nShell);
+    double gossipInterval;
 
-    EthSwitch(int8_t authorId, double errorRate) {
-        this->authorId = authorId;
-        this->name = "switch:" + to_string(this->authorId);
+    EthSwitch(std::pair<int, int> pq, double gossipInterval) {
+
+        RsaSignature signature(pq.first, pq.second);
+        auto pubKey = signature.generatePublicKey();
+        auto privKey = signature.generatePrivateKey();
+
+
+        this->authorId = SWITCH_PREFIX + to_string((int) pubKey);
+        this->gossipInterval = gossipInterval;
+        this->privateKey = privKey;
+        this->publicKey = pubKey;
     }
     virtual ~EthSwitch() {}
     virtual void StartApplication(void) {

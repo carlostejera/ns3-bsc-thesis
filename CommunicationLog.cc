@@ -10,46 +10,62 @@ using namespace std;
  */
 
 bool CommunicationLog::addToLog(LogShell shell) {
-    if (this->log.empty() && shell.sequenceNum == 0) {
-        this->log.push_back(shell);
-        return true;
-    }
-    // Check sequence and previous hash
-    if (shell.sequenceNum == this->getCurrentSeqNum() + 1 && shell.prevEventHash == this->createHash(this->getLastEntry())) {
+    if (this->isSubsequentEntry(shell)){
         this->log.push_back(shell);
         return true;
     }
     return false;
 }
-
+/**
+ * Initialises a log with a first entry to avoid correctness problems
+ */
 void CommunicationLog::initialiseLog() {
-    this->addToLog(LogShell(0, "", this->owner, new ContentShell("", "", "Log initialised")));
+    this->appendLogShell(new ContentShell("", "", "Log initialised"));
 }
 
+/**
+ * @return last LogShell of the log
+ */
 LogShell CommunicationLog::getLastEntry() {
-    cout << to_string(this->owner) << " " << to_string(this->dedicated) << endl;
     return this->log.back();
 }
-
+/**
+ * Get log with given sequence number
+ * @param entryNum sequence number
+ * @return LogShell at given position
+ */
 LogShell CommunicationLog::getEntryAt(int entryNum) {
     return this->log.at(entryNum);
 }
 
-int8_t CommunicationLog::getCurrentSeqNum() {
+/**
+ * Get current sequence number. If the log is yet empty, it returns -1.
+ * @return sequence number
+ */
+int16_t CommunicationLog::getCurrentSeqNum() {
     return this->log.empty() ? -1 : this->getLastEntry().sequenceNum;
 }
-
+/**
+ * @return Number of LogShells
+ */
 int CommunicationLog::getLogsSize() {
     return this->log.size();
 }
 
+/**
+ * @return log
+ */
 vector<LogShell> CommunicationLog::getLog() {
     return this->log;
 }
 
+/**
+ * @return Log as a long string for printing reasons
+ */
 string CommunicationLog::getLogAsString() {
     Printer printer;
     ostringstream oss;
+    oss << "owner: " << this->owner << " dedicated: " << this->dedicated << endl;
     for (auto log: this->log) {
         printer.visit(&log);
         oss << printer.str() << endl;
@@ -58,6 +74,11 @@ string CommunicationLog::getLogAsString() {
     return oss.str();
 }
 
+/**
+ * Create a hash value of the last LogShell of the log ensure that the next LogShell is not altered in any way.
+ * @param entry last LogShell
+ * @return hash value
+ */
 string CommunicationLog::createHash(LogShell entry) {
     Printer p;
     p.visit(entry.shell);
@@ -73,20 +94,66 @@ string CommunicationLog::createHash(LogShell entry) {
     for (int i = 0; i < SHA_DIGEST_LENGTH; i++) {
         oss << hex << setw(2) << setfill('0') << (int)digest[i];
     }
-    cout << oss.str() << endl;
-
     return oss.str();
 }
-
+/**
+ * Checks:  Does the new LogShell have the next sequence number?
+ *          Is the new LogShell's hash value the same one, if the last LogShell is converted to a hash value?
+ *          Is the author also the owner?
+ *
+ * If the log is still empty, it checks only if the sequence number is 0. For LogShell 0 is no hash value.
+ *
+ * @param lShell the new LogShell to append
+ * @return result of the checks
+ */
 bool CommunicationLog::isSubsequentEntry(LogShell lShell) {
+
+    RsaSignature sign;
+    std::string::size_type sz;
+    double signature = std::stod(lShell.signature, &sz);
+
+    auto x = Parser::varSplitter(lShell.authorId, ":");
+    std::string::size_type sz2;
+    auto publicKey = std::stod(x.second, &sz2);
+    auto verification =  sign.verify(signature, publicKey);
+    verification = round(verification);
+
     return ((this->log.empty() && lShell.sequenceNum == 0)
     ||
-    (this->getCurrentSeqNum() + 1 == lShell.sequenceNum && this->createHash(this->getLastEntry()) == lShell.prevEventHash && this->owner == lShell.authorId)
+    (this->getCurrentSeqNum() + 1 == lShell.sequenceNum && this->createHash(this->getLastEntry()) == lShell.prevEventHash && this->owner == lShell.authorId && verification == lShell.sequenceNum)
     );
 }
-const int8_t& CommunicationLog::getDedicated() const {
+/**
+ *
+ * @return dedicated
+ */
+const std::string & CommunicationLog::getDedicated() const {
     return this->dedicated;
 }
-const int8_t &CommunicationLog::getOwner() const {
+
+/**
+ *
+ * @return owner
+ */
+const std::string & CommunicationLog::getOwner() const {
     return this->owner;
+}
+
+/**
+ * CommunicationLog's function handles the correct way to append a new ContentShell to the log as LogShell only if
+ * the device is the author himself.
+ * @param contentShell new content to append as LogShell
+ */
+void CommunicationLog::appendLogShell(ContentShell* contentShell) {
+    RsaSignature rsa;
+
+    auto signedMsg = rsa.sign(this->getCurrentSeqNum() + 1, this->privKey);
+    std::ostringstream oss;
+    oss << std::fixed << std::setprecision(20) << signedMsg;
+
+    auto hash = this->log.empty() ? "" : this->createHash(this->getLastEntry());
+    this->log.push_back(LogShell(to_string(Simulator::Now().GetSeconds()), this->getCurrentSeqNum() + 1, hash, this->owner, oss.str(), contentShell));
+}
+bool CommunicationLog::empty() {
+    return this->log.empty();
 }

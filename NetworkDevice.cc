@@ -50,63 +50,62 @@ void NetworkDevice::sendPacket(Ptr<NetDevice> nDev, Ptr<Packet> p) {
  * @param authorId
  * @return
  */
-bool NetworkDevice::isFamilyMember(int8_t authorId) {
+bool NetworkDevice::isFamilyMember(std::string authorId) {
     return std::find(this->familyMembers.begin(), this->familyMembers.end(), authorId) != this->familyMembers.end();
 }
 
 void NetworkDevice::printNetworkLog() {
     Printer stringAssembler;
     ostringstream oss;
-    oss << "-----" << "Device ID: " << to_string(this->authorId) << "-----" << endl;
-    oss << "Communication logs:" << endl;
-    for (auto log : this->communicationLogs) {
-        oss << log.first << endl;
-        oss << log.second->getLogAsString() << endl;
+    oss << "-----" << "Device ID: " << this->authorId << "-----" << endl;
+    oss << "privKey: " << this->privateKey << endl;
+    oss << "All logs: " << endl;
+    oss << this->logPacket.toString() << endl;
+
+    if (this->myPersonalLog != nullptr){
+        oss << "My personal log: " << endl;
+        oss << this->myPersonalLog->getLogAsString() << endl;
     }
-    oss << "Subscriptions:" << endl;
-    for (auto log : this->subscriptions) {
-        oss << log.first << endl;
-        oss << log.second->getLogAsString() << endl;
-    }
-    oss << endl << "Neighbours: " << endl;
+    oss << "////////////////////////////////////////" << endl;
+    oss << endl << "NEIGHBOURS: " << endl;
     for (auto iter = this->neighbourMap.begin(); iter != this->neighbourMap.end(); iter++) {
         auto authorId = iter->first;
         auto nDev = iter->second;
-        oss << to_string(authorId) << ": " << ns3::Mac48Address::ConvertFrom(nDev->GetAddress()) << endl;
+        oss << authorId << ": " << ns3::Mac48Address::ConvertFrom(nDev->GetAddress()) << endl;
     }
-    oss << "Family member:" << endl;
+    oss << "NETWORK MEMBERS:" << endl;
     for (auto member : this->familyMembers) {
-        oss << to_string(member) << endl;
+        oss << member << endl;
     }
-    oss << "------" << "LOG END " << to_string(this->authorId) << "------";
-    cout << "\033[1;" << to_string(20 + this->authorId) << "m" << oss.str() << "\033[0m\n";
+    oss << "------" << "LOG END " << this->authorId << "------";
+    cout << "\033[1;" << "33" << "m" << oss.str() << "\033[0m\n";
 }
 
-void NetworkDevice::sendEntryFromIndexTo(CommunicationLog* log, int8_t receiverId, int8_t seqFrom, string type) {
-    if (receiverId == -1) {
+void NetworkDevice::sendEntryFromIndexTo(CommunicationLog* log, std::string receiverId, int16_t seqFrom, string type) {
+    if (receiverId == "-1") {
         this->packetOss << "Not known neighbour. dropped" << endl;
         return;
     }
 
+    if (log == NULL) {
+        this->packetOss << "no log yet" << endl;
+        return;
+    }
     seqFrom = seqFrom == -1 ? 0 : seqFrom;
     auto receiverNetDevice = this->neighbourMap[receiverId];
     Printer p;
     LogShell lShell = log->getLastEntry();
     LogShell* logShell_p = &lShell;
     p.visit(logShell_p);
-    cout << "check" << endl;
-    cout << to_string(receiverId) << endl;
-    auto receiverMac = ns3::Mac48Address::ConvertFrom(receiverNetDevice->GetAddress());
-    cout << "mate" << endl;
     for (int i = seqFrom; i <= log->getCurrentSeqNum(); i++) {
         auto lShell = log->getEntryAt(i);
-        NetShell* nShell = new NetShell(receiverMac, receiverId, type, 0, &lShell);
+        NetShell* nShell = new NetShell(receiverId, type, 0, 0, &lShell);
         Ptr<Packet> p = this->createPacket(nShell);
         this->sendPacket(receiverNetDevice, p);
     }
 }
 
-int8_t NetworkDevice::getKeyByValue(Ptr<NetDevice> senderDev) {
+std::string NetworkDevice::getKeyByValue(Ptr<NetDevice> senderDev) {
     for (auto iter = this->neighbourMap.begin(); iter != this->neighbourMap.end(); iter++) {
         auto authorId = iter->first;
         auto nDev = iter->second;
@@ -114,8 +113,9 @@ int8_t NetworkDevice::getKeyByValue(Ptr<NetDevice> senderDev) {
             return authorId;
         }
     }
-    cout << "something went wrong" << endl;
-    return -1;
+
+    this->packetOss << "& something went wrong" << endl;
+    return "-1";
 }
 
 int8_t NetworkDevice::convertStringToId(string id) {
@@ -125,20 +125,21 @@ int8_t NetworkDevice::convertStringToId(string id) {
     return authorId;
 }
 
+// TODO: remove
 bool NetworkDevice::logExists(NetShell* nShell) {
-    return this->logs.find(nShell->type) != this->logs.end();
+    return this->logPacket.exists(nShell->type);
 }
 
+/**
+ * Checks first if the log exist before going the the actual concatenating.
+ * @param nShell received netshell
+ * @return if packet got concatenated
+ */
 bool NetworkDevice::concatenateEntry(NetShell* nShell) {
     if (!this->logExists(nShell)) {
-        // TODO: Maybe change
-        this->logs.insert({nShell->type, {nShell->shell->authorId, new CommunicationLog(nShell->shell->authorId, 108)}});
-        if (nShell->type.find("switch:") != string::npos && nShell->type.find("user:") != string::npos) {
-            this->communicationLogs.push_back({nShell->type,this->logs[nShell->type].second});
-        } else {
-            this->subscriptions.push_back({nShell->type, this->logs[nShell->type].second});
-        }
-        cout << "xdddddddddddddddddddd" << endl;
+        auto comm = new CommunicationLog(nShell->shell->authorId, "*", -1);
+        auto logType = nShell->type;
+        this->logPacket.add(LogPacket(nShell->type, comm, this->getCommType(logType)));
     }
 
     return this->isEntryConcatenated(nShell);
@@ -152,37 +153,65 @@ EnumFunctions NetworkDevice::hash(string input) {
     if (input == "addToNetwork") return ADD_TO_NETWORK;
     if (input == "getContentFrom") return GET_CONTENT_FROM;
     if (input == "pushContent") return UPDATE_CONTENT_FROM;
+    if (input == UNSUBSCRIBE) return UNSUBSCRIBE_USER;
     return NONE;
 }
 
-bool NetworkDevice::isNeighbourToAdd(const int8_t authorId, const uint8_t hops) {
+bool NetworkDevice::isNeighbourToAdd(const std::string authorId, const uint8_t hops) {
     return this->neighbourMap.find(authorId) == this->neighbourMap.end() && hops == 0;
 }
 
-bool NetworkDevice::isNeighbour(const int8_t authorId) {
+bool NetworkDevice::isNeighbour(const std::string authorId) {
     return this->neighbourMap.find(authorId) != this->neighbourMap.end();
 }
 
 
-void NetworkDevice::addNeighbour(int8_t authorId, Ptr <NetDevice> dev) {
-    this->packetOss << "Adding neighbour: " << to_string(authorId);
+void NetworkDevice::addNeighbour(std::string authorId, Ptr<NetDevice> dev) {
+    this->packetOss << "Adding neighbour: " << authorId;
     this->neighbourMap.insert(make_pair(authorId, dev));
 }
 
 void NetworkDevice::printPacketResult() {
-    cout << this->packetOss.str() << endl;
+    cout << this->packetOss.str();
     this->packetOss.str("");
 
 }
 bool NetworkDevice::isGossipEntryOlder(NetShell *nShell) {
-    return this->logs[nShell->type].second->getCurrentSeqNum() > nShell->shell->sequenceNum;
+    // TODO: maybe an error
+    return this->logPacket.getLogByWriterReader(nShell->type)->getCurrentSeqNum() > nShell->shell->sequenceNum;
 }
 bool NetworkDevice::isEntryConcatenated(NetShell* netShell) {
-    CommunicationLog* l = this->logs[netShell->type].second;
+    CommunicationLog* l = this->logPacket.getLogByWriterReader(netShell->type);
     string conc = "& concatenating entry " + to_string(netShell->shell->sequenceNum) + " to " + netShell->type + "\n";
     string drop = "& dropping packet, not matching subsequent entry\n";
     bool result = l->addToLog(*(netShell->shell));
     this->packetOss << (result ? conc : drop);
     return result;
+}
+const std::string NetworkDevice::LOGTYPE(std::string writer, std::string reader) const {
+    return writer + "/" + reader;
+}
+
+void NetworkDevice::removeSubscription(std::string subscription) {
+    this->logPacket.remove(LOGTYPE(subscription, USER_ALL));
+}
+void NetworkDevice::printBlack(std::string output) {
+    cout << "\033[1;" << "31" << "m" << output << "\033[0m\n";
+}
+bool NetworkDevice::subscriptionExists(std::string subscription) {
+   /* for (auto sub : this->subscriptions) {
+        auto logType = sub.first;
+        if (logType == subscription) {
+            return true;
+        }
+    }*/
+    return false;
+}
+CommunicationType NetworkDevice::getCommType(std::string type) {
+    if (type.find(SWITCH_ALL) != std::string::npos  && type.find(USER_PREFIX) != std::string::npos) return CommunicationType::P2P_COMM;
+    if (type.find(SWITCH_ALL) != std::string::npos  && type.find(MANAGER_PREFIX) != std::string::npos) return CommunicationType::SUBSCRIPTION;
+    if (type.find(USER_ALL) != std::string::npos) return CommunicationType::SUBSCRIPTION;
+    if (type.find(SWITCH_PREFIX) != std::string::npos && type.find(this->authorId) != std::string::npos) return SWITCH_SWITCH_COMM;
+    return NO_TYPE;
 }
 

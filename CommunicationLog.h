@@ -4,6 +4,7 @@
 #include "shells/LogStructures.h"
 #include <openssl/sha.h>
 #include <iomanip>
+#include "Signature.h"
 using namespace ns3;
 using namespace std;
 
@@ -15,19 +16,16 @@ using namespace std;
 
 class CommunicationLog {
     private:
-    int8_t owner;
+    std::string owner;
     vector<LogShell> log;
-    int8_t dedicated;
+    std::string dedicated;
+    double privKey;
   public:
 
-    CommunicationLog(int8_t owner) {
-        this->owner = owner;
-        this->dedicated = owner;
-    }
-
-    CommunicationLog(int8_t owner, int8_t dedicated) {
+    CommunicationLog(std::string owner, std::string dedicated, double privKey) {
         this->owner = owner;
         this->dedicated = dedicated;
+        this->privKey = privKey;
     }
     virtual ~CommunicationLog() {}
 
@@ -35,14 +33,16 @@ class CommunicationLog {
     bool addToLog( LogShell shell);
     LogShell getLastEntry();
     LogShell getEntryAt(int entryNum);
-    int8_t getCurrentSeqNum();
+    int16_t getCurrentSeqNum();
     int getLogsSize();
     vector<LogShell> getLog();
     string getLogAsString();
     string createHash(LogShell shell);
     bool isSubsequentEntry(LogShell lShell);
-    const int8_t& getDedicated() const;
-    const int8_t &getOwner() const;
+    const std::string & getDedicated() const;
+    const std::string & getOwner() const;
+    void appendLogShell(ContentShell* contentShell);
+    bool empty();
 };
 
 #endif

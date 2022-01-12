@@ -15,6 +15,7 @@
 #include "ns3/simulator.h"
 #include <iostream>
 #include "ns3/type-id.h"
+#include "../../../build/ns3/simulator.h"
 
 using namespace std;
 using namespace ns3;
@@ -30,13 +31,24 @@ static constexpr const char* N_SHELL = "nShell=(";
 static constexpr const char* L_SHELL = "lShell=(";
 static constexpr const char* C_SHELL = "cShell=(";
 
-static constexpr const char* REQUEST = "request";
-static constexpr const char* DIARY = "diary";
-static constexpr const char* LOG_ENTRY = "logEntry";
 static constexpr const char* ADD_MEMBER = "addMemberToNetwork";
 
 static constexpr const char* ASSIGN_MANAGER = "assignManager";
-static constexpr const char* GOSSIP = "gossip";
+
+static constexpr const char* UNSUBSCRIBE = "removeUserFromInl";
+
+static constexpr const char* SWITCH_PREFIX = "switch:";
+static constexpr const char* USER_PREFIX = "user:";
+static constexpr const char* MANAGER_PREFIX = "manager:";
+static constexpr const char* ALL_SUFFIX = "*";
+static constexpr const char* MANAGER_RECEIVER = *("/") + MANAGER_PREFIX;
+static constexpr const char* SWITCH_RECEIVER = *("/") + SWITCH_PREFIX;
+static constexpr const char* USER_RECEIVER = *("/") + USER_PREFIX;
+static constexpr const char* USER_ALL = "user:*";
+static constexpr const char* SWITCH_ALL = "switch:*";
+static constexpr const char* MANAGER_ALL = "manager:*";
+static constexpr const char* ADD_SWITCH_TO_NETWORK = "addToNetwork";
+
 
 
 struct ExpressionVisitor {
@@ -75,24 +87,23 @@ struct ContentShell : public Shell {
 };
 
 struct LogShell : public Shell {
-    int8_t sequenceNum = 0;
+    int16_t sequenceNum = 0;
     string prevEventHash;
-    int8_t authorId;
-    string timestamp;
+    std::string authorId;
     ContentShell* shell;
-//    static long globalHash = 100000;
-    long myHash; 
+    std::string timestamp;
+    std::string signature;
+    long myHash;
 
 
-    LogShell(int8_t seqNum, string prevHash, int8_t authorId, ContentShell* shell) :
+    LogShell(std::string timestamp, int16_t seqNum, string prevHash, std::string authorId, std::string signature, ContentShell* shell) :
             sequenceNum(seqNum),
             prevEventHash(prevHash),
             authorId(authorId),
-            shell(shell)
+            shell(shell),
+            timestamp(timestamp),
+            signature(signature)
     {
-        //TODO: Add event checker with the global hash
-//        this->myHash = globalHash;
-//        globalHash++;
     }
 
     void accept(ExpressionVisitor* visitor) override {
@@ -101,18 +112,23 @@ struct LogShell : public Shell {
 };
 
 struct NetShell : public Shell {
-    ns3::Mac48Address macReceiver;
-    int8_t receiverId;
     string type;
     LogShell* shell;
     uint8_t hops;
+    uint8_t flag;
+    std::string timestamp;
 
-    NetShell(ns3::Mac48Address mac, int8_t receiverId, string type, uint8_t hops, LogShell* shell){
-        this->macReceiver = mac;
-        this->receiverId = receiverId;
+    NetShell(std::string receiverId,
+             string type,
+             uint8_t flag,
+             uint8_t hops,
+             LogShell *shell,
+             std::string timestamp = to_string(Simulator::Now().GetSeconds())) {
+        this->timestamp = timestamp;
         this->type = type;
         this->shell = shell;
         this->hops = hops;
+        this->flag = flag;
     }
 
     void accept(ExpressionVisitor* visitor) override {
@@ -121,7 +137,7 @@ struct NetShell : public Shell {
 };
 
 
-struct SomeFunctions {
+struct Parser {
     static pair <string, string> varSplitter(string s, string del = "=") {
         int start = 0;
         int end = s.find(del);
@@ -178,17 +194,16 @@ struct SomeFunctions {
 
         m = shellSplit(logShellParams, "|");
 
-        stringstream ssAuthor(m["author"]);
         stringstream ssSeq(m["seq"]);
         int seq;
-        int author_id;
-        ssAuthor >> author_id;
         ssSeq >> seq;
 
         LogShell *lShellNew = new LogShell(
+                m["timestamp"],
                 seq,
                 m["prevHash"],
-                author_id,
+                m["author"],
+                m["signature"],
                 cShellNew
         );
         auto netShellParams = nShellContent.erase(nShellContent.find(L_SHELL));
@@ -198,17 +213,17 @@ struct SomeFunctions {
         ssHops >> hops;
         string tmp = m["receiver"];
         auto receiverPair = varSplitter(tmp, "/");
-        const char *bruh = receiverPair.first.c_str();
 
-        stringstream ssId(receiverPair.second);
-        int receiverId;
-        ssId >> receiverId;
+        stringstream ssFlag(m["flag"]);
+        int flag;
+        ssFlag >> flag;
         auto resultShell = new NetShell(
-                ns3::Mac48Address(bruh),
-                receiverId,
-                m["type"],
-                hops,
-                lShellNew
+            receiverPair.second,
+            m["log_type"],
+            flag,
+            hops,
+            lShellNew,
+            m["send_timestamp"]
         );
         return resultShell;
     }
@@ -219,29 +234,3 @@ struct SomeFunctions {
     }
 };
 
-class MyHeader : public Header {
-public:
-
-    MyHeader();
-
-    virtual ~MyHeader();
-
-    void SetData(uint16_t data);
-
-    uint16_t GetData(void) const;
-
-    static TypeId GetTypeId(void);
-
-    virtual TypeId GetInstanceTypeId(void) const;
-
-    virtual void Print(std::ostream &os) const;
-
-    virtual void Serialize(Buffer::Iterator start) const;
-
-    virtual uint32_t Deserialize(Buffer::Iterator start);
-
-    virtual uint32_t GetSerializedSize(void) const;
-
-private:
-    uint16_t m_data;
-};

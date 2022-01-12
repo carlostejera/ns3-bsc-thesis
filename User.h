@@ -11,17 +11,13 @@ using namespace std;
 class User : public Application, public NetworkDevice {
 
 private:
-    std::map<int8_t, Ptr<NetDevice>> connectedSwitches;
-    int8_t authorId;
-    CommunicationLog* userLog;
-    map<uint8_t, CommunicationLog*> subscriptions;
-    int8_t interested;
     int count = 0;
 
 public:
     void recvPkt(Ptr<NetDevice>, Ptr<const Packet>, uint16_t proto, const Address& from, const Address& to, NetDevice::PacketType pt);
     void joinNetwork();
-    void subscribe(int8_t authorId);
+    void subscribe(std::string authorId);
+    void unsubscribe(std::string authorId);
     void plugAndPlay();
     void printNetworkLog() override;
     void pushLogToSwitch();
@@ -31,10 +27,15 @@ public:
 
 
 
-    User(int32_t id, double errorRate) : Application() {
-        this->authorId = id;
-        this->userLog = new CommunicationLog(this->authorId);
-        this->name = "user:" + to_string(this->authorId);
+    User(std::pair<int, int> pq, double gossipInterval) : Application() {
+        RsaSignature signature(pq.first, pq.second);
+        auto pubKey = signature.generatePublicKey();
+        auto privKey = signature.generatePrivateKey();
+
+        this->authorId = USER_PREFIX + to_string((int) pubKey);
+        this->privateKey = privKey;
+        this->myPersonalLog = new CommunicationLog(this->authorId, USER_ALL, this->privateKey);
+        this->publicKey = pubKey;
     }
     virtual ~User() {}
 
@@ -46,6 +47,7 @@ public:
                     GetNode()->GetDevice(i)); //Register Event Handler to all Devices
         }
         this->plugAndPlay();
+        Simulator::ScheduleDestroy(&User::printNetworkLog, this);
     }
 
 

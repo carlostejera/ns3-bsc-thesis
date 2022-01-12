@@ -12,23 +12,24 @@ private:
     string myType;
 public:
     void recvPkt(Ptr<NetDevice> dev, Ptr<const Packet> packet, uint16_t proto, const Address& from, const Address& to, NetDevice::PacketType pt);
-    void registerUser(Ptr<NetDevice> dev, int8_t authorId);
-    void sendNetworkJoinConfirmation(int8_t authorId);
-    void broadcastLastNetworkChange(int8_t exceptedReceiver);
+    void registerUser(Ptr<NetDevice> dev, std::string authorId);
+    void sendNetworkJoinConfirmation(std::string authorId);
+    void broadcastLastNetworkChange(std::string exceptedReceiver);
     bool processReceivedSwitchPacket(NetShell* netShell, Ptr<NetDevice> dev) override;
     void processReceivedUserPacket(NetShell* netShell, Ptr<NetDevice> dev) override;
     bool concatenateEntry(NetShell* netShell);
-    CommunicationLog* getLogFrom(string type);
 
+    Manager(std::pair<int, int> pq, double gossipInterval) : Application() {
+        RsaSignature signature(pq.first, pq.second);
+        auto pubKey = signature.generatePublicKey();
+        auto privKey = signature.generatePrivateKey();
 
-    Manager(int32_t id, double errorRate) : Application() {
-        this->authorId = id;
-        this->myType = "manager:" + to_string(this->authorId) + "/switch:*";
-        this->name = "manager:" + to_string(this->authorId);
-
-        this->myPersonalLog = new CommunicationLog(this->authorId);
+        this->authorId = MANAGER_PREFIX + to_string((int) pubKey);
+        this->myType = this->authorId + "/switch:*";
+        this->privateKey = privKey;
+        this->myPersonalLog = new CommunicationLog(this->authorId, SWITCH_ALL, this->privateKey);
         this->myPersonalLog->initialiseLog();
-        this->subscriptions.push_back({this->myType, this->myPersonalLog});
+        this->publicKey = pubKey;
     }
     virtual ~Manager() {}
 

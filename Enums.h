@@ -12,6 +12,7 @@ enum EnumFunctions {
     ADD_SWITCH,
     GET_CONTENT_FROM,
     UPDATE_CONTENT_FROM,
+    UNSUBSCRIBE_USER,
     NONE
 };
 #endif //NS_3_30_ENUMS_H
